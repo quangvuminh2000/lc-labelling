@@ -144,7 +144,7 @@ def labelling_component():
 
         with st.form("label_form", clear_on_submit=True):
             st.subheader("Phản hồi")
-            feedback_val = st.radio("Feedback", ["**:green[Đồng ý]**", "**:red[Kiểm tra lại]**"], key="feedback_radio")
+            feedback_val = st.radio("Feedback", ["Đồng ý", "Kiểm tra lại"], key="feedback_radio")
             reason_val = st.text_area(
                 label="Ý kiến (nếu có)", placeholder="Viết ý kiến của bạn..."
             )
