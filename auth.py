@@ -221,26 +221,6 @@ def authentication_component():
         if auth_page:
             auth_page_names_to_funcs[auth_page](authenticator)
 
-        # # ? Save authentication file & auth data
-        # conn = st.connection("gcs", type=FilesConnection)
-
-        # save_data_gcs(CONFIG_PATH_LOCAL, CONFIG_PATH_GCS, conn)
-
-        # usernames = list(config["credentials"]["usernames"].keys())
-        # passwords = [config["credentials"]["usernames"][user]["password"] for user in usernames]
-        # emails = [config["credentials"]["usernames"][user]["email"] for user in usernames]
-        # names = [config["credentials"]["usernames"][user]["name"] for user in usernames]
-
-        # config_df = pd.DataFrame({
-        #     "username": usernames,
-        #     "email": emails,
-        #     "name": names,
-        #     "password": passwords
-        # })
-
-        # config_df.to_csv(CONFIG_DATA_PATH_LOCAL, index=False)
-        # save_data_gcs(CONFIG_DATA_PATH_LOCAL, CONFIG_DATA_PATH_GCS, conn)
-
 
 if __name__ == "__main__":
     authentication_component()

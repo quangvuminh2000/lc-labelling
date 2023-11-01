@@ -161,3 +161,7 @@ cython_debug/
 
 # Streamlit
 .streamlit/
+
+# Data
+data/
+config/
