@@ -28,8 +28,28 @@ with open(CONFIG_PATH_LOCAL) as file:
 
 # ? HELPERS
 def update_config():
-    with open(CONFIG_PATH_LOCAL, "w") as file:
-        yaml.dump(config, file, default_flow_style=False)
+    with st.spinner("Saving your profile..."):
+        with open(CONFIG_PATH_LOCAL, "w") as file:
+            yaml.dump(config, file, default_flow_style=False)
+        # ? Save authentication file & auth data
+        conn = st.connection("gcs", type=FilesConnection)
+
+        save_data_gcs(CONFIG_PATH_LOCAL, CONFIG_PATH_GCS, conn)
+
+        usernames = list(config["credentials"]["usernames"].keys())
+        passwords = [config["credentials"]["usernames"][user]["password"] for user in usernames]
+        emails = [config["credentials"]["usernames"][user]["email"] for user in usernames]
+        names = [config["credentials"]["usernames"][user]["name"] for user in usernames]
+
+        config_df = pd.DataFrame({
+            "username": usernames,
+            "email": emails,
+            "name": names,
+            "password": passwords
+        })
+
+        config_df.to_csv(CONFIG_DATA_PATH_LOCAL, index=False)
+        save_data_gcs(CONFIG_DATA_PATH_LOCAL, CONFIG_DATA_PATH_GCS, conn)
 
 
 def send_email(receiver_mail: str, subject: str, message: str):
@@ -70,7 +90,7 @@ def reset_password_form(authenticator: stauth.Authenticate):
 
 
 # ? IV. REGISTER USER
-def register_user_form(authenticator):
+def register_user_form(authenticator: stauth.Authenticate):
     try:
         if authenticator.register_user("Register user", preauthorization=False):
             st.success("User registered successfully")
@@ -201,25 +221,25 @@ def authentication_component():
         if auth_page:
             auth_page_names_to_funcs[auth_page](authenticator)
 
-        # ? Save authentication file & auth data
-        conn = st.connection("gcs", type=FilesConnection)
+        # # ? Save authentication file & auth data
+        # conn = st.connection("gcs", type=FilesConnection)
 
-        save_data_gcs(CONFIG_PATH_LOCAL, CONFIG_PATH_GCS, conn)
+        # save_data_gcs(CONFIG_PATH_LOCAL, CONFIG_PATH_GCS, conn)
 
-        usernames = list(config["credentials"]["usernames"].keys())
-        passwords = [config["credentials"]["usernames"][user]["password"] for user in usernames]
-        emails = [config["credentials"]["usernames"][user]["email"] for user in usernames]
-        names = [config["credentials"]["usernames"][user]["name"] for user in usernames]
+        # usernames = list(config["credentials"]["usernames"].keys())
+        # passwords = [config["credentials"]["usernames"][user]["password"] for user in usernames]
+        # emails = [config["credentials"]["usernames"][user]["email"] for user in usernames]
+        # names = [config["credentials"]["usernames"][user]["name"] for user in usernames]
 
-        config_df = pd.DataFrame({
-            "username": usernames,
-            "email": emails,
-            "name": names,
-            "password": passwords
-        })
+        # config_df = pd.DataFrame({
+        #     "username": usernames,
+        #     "email": emails,
+        #     "name": names,
+        #     "password": passwords
+        # })
 
-        config_df.to_csv(CONFIG_DATA_PATH_LOCAL, index=False)
-        save_data_gcs(CONFIG_DATA_PATH_LOCAL, CONFIG_DATA_PATH_GCS, conn)
+        # config_df.to_csv(CONFIG_DATA_PATH_LOCAL, index=False)
+        # save_data_gcs(CONFIG_DATA_PATH_LOCAL, CONFIG_DATA_PATH_GCS, conn)
 
 
 if __name__ == "__main__":

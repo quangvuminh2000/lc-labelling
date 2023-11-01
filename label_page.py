@@ -67,7 +67,7 @@ def labelling_component():
         st.warning("Hãy đăng nhập để sử dụng dịch vụ")
 
     else:
-        col1, col2, col3 = st.columns(3)
+        col1, col2 = st.columns(2)
         with col1:
             with st.spinner("Loading..."):
                 conn = st.connection("gcs", type=FilesConnection)
@@ -86,7 +86,6 @@ def labelling_component():
 
             cardcode = select_customer(cardcodes)
 
-        with col2:
             show_input_cols = ["DocEntry", "Date", "item_name", "Category", "Quantity"]
             trans_df: pd.DataFrame = trans_df[trans_df["CardCode"] == cardcode][
                 show_input_cols
@@ -103,7 +102,9 @@ def labelling_component():
                 ]
             ]
 
-            st.subheader("Input - Chi tiết đơn hàng theo ngày")
+            st.subheader(
+                f"Input - Chi tiết đơn hàng theo ngày (:blue[{trans_df['DocEntry'].nunique()} Đơn hàng])"
+            )
             st.dataframe(
                 trans_df.rename(
                     columns={
@@ -118,7 +119,7 @@ def labelling_component():
                 use_container_width=True,
             )
 
-        with col3:
+        with col2:
             st.subheader("Output - Model output")
             st.dataframe(
                 outputs_df.rename(
@@ -143,10 +144,16 @@ def labelling_component():
             )
 
         with st.form("label_form", clear_on_submit=True):
-            st.subheader("Phản hồi")
-            feedback_val = st.radio("Feedback", ["Đồng ý", "Kiểm tra lại"], key="feedback_radio")
+            with col2:
+                st.subheader("Phản hồi")
+                feedback_val = st.radio(
+                    "Feedback", ["Đồng ý", "Kiểm tra lại"], key="feedback_radio"
+                )
+            st.subheader("Ý kiến")
             reason_val = st.text_area(
-                label="Ý kiến (nếu có)", placeholder="Viết ý kiến của bạn..."
+                label="Ý kiến (nếu có)",
+                placeholder="Viết ý kiến của bạn...",
+                label_visibility="collapsed",
             )
             reason_val = None if reason_val.strip() == "" else reason_val
 
@@ -168,9 +175,10 @@ def labelling_component():
                 )
 
                 df_label = pd.concat([df_submit, df_label], ignore_index=True)
-                df_label.to_csv(LOCAL_LABEL_PATH, index=False)
-                save_data_gcs(LOCAL_LABEL_PATH, LABEL_PATH, conn=conn)
-                st.success("Thank you for your response!!!")
+                with st.spinner("Saving data..."):
+                    df_label.to_csv(LOCAL_LABEL_PATH, index=False)
+                    save_data_gcs(LOCAL_LABEL_PATH, LABEL_PATH, conn=conn)
+                    st.success("Thank you for your response!!!")
 
         st.subheader("All label data")
         st.dataframe(
