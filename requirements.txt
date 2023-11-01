@@ -1,3 +1,9 @@
 numpy==1.24.3
 pandas==2.0.3
 streamlit==1.28.0
+st-files-connection==0.1.0
+gcsfs==2023.10.0
+streamlit-authenticator==0.2.3
+quick-mailer==2022.2.22
+python-dotenv==1.0.0
+pyyaml==6.0.1

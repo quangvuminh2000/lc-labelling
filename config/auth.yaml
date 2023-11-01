@@ -1,0 +1,13 @@
+credentials:
+  usernames:
+    quangvm9:
+      email: quangvm9@fpt.com
+      name: Quang Vu Minh
+      password: $2b$12$EELDil4tO69GMOkBD4P0MesYyicJbEeqNFJeAn00F9L3CKRKooQuC
+cookie:
+  expiry_days: 30
+  key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiVlx1MDE2OSBNaW5oIFF1YW5nIiwidXNlcm5hbWUiOiJxdWFuZ3ZtMjAwMCIsImV4cF9kYXRlIjoxNzAxMzA2MDY0LjAwOTI4OX0.x0Q7F9wD73hl45h4Y69SEBAayiS727NiCrpM3PJZo44
+  name: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiVlx1MDE2OSBNaW5oIFF1YW5nIiwidXNlcm5hbWUiOiJxdWFuZ3ZtMjAwMCIsImV4cF9kYXRlIjoxNzAxMjk1NjMwLjE4MzcwNH0.4mbgyXqttRH-pwuRuoPx51wmzn8uRfjO6w1IjObxg0E
+preauthorized:
+  emails:
+  - quangvm9@fpt.com.vn

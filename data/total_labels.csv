@@ -1,9 +1,3 @@
-email,CardCode,feedback,reason
-quangvm9@fpt.com,286726,Disagree,Label is wrong
-quangvm9@fpt.com,2039815,Agree,
-quangvm9@fpt.com,10915842,Disagree,There is no label
-quangvm9@fpt.com.vn,8222728,Agree,
-quangvm9@fpt.com.vn,3467272,Agree,
-quangvm9@fpt.com.vn,2039815,Agree,
-quangvm9@fpt.com.vn,10915842,Disagree,No output
-quangvm9@fpt.com.vn,286726,Agree,
+username,CardCode,feedback,reason
+quangvm9,286726,Đồng ý,
+quangvm9,10915842,Đồng ý,
