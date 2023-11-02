@@ -76,8 +76,7 @@ def load_all_data(conn: FilesConnection):
 
 
 def color_importance(series: pd.Series):
-
-    return series.apply(lambda x: f'background-color: {IMPORTANCE_COLOR_CODES[x]}')
+    return series.apply(lambda x: f"background-color: {IMPORTANCE_COLOR_CODES[x]}")
 
 
 def labelling_component():
@@ -148,8 +147,8 @@ def labelling_component():
                     columns={
                         "DocEntry": "Mã đơn hàng",
                         "Date": "Ngày mua",
-                        "item_name": "Tên sản phẩm",
-                        "Category": "Loại",
+                        "ItemName": "Tên sản phẩm",
+                        "LoaiName": "Loại",
                         "Quantity": "Số lượng",
                     }
                 ).style.apply(format_color_groups, axis=None),
