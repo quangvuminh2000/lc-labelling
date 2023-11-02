@@ -76,10 +76,19 @@ def labelling_component():
         st.warning("Hãy đăng nhập để sử dụng dịch vụ")
 
     else:
-        col_x_1, _ = st.columns([1, 3])
+        col_x_1, col_x_2, _ = st.columns([1, 1, 2])
         col1, col2 = st.columns([2, 1])
         conn = st.connection("gcs", type=FilesConnection)
         with col_x_1:
+            st.write(
+                """<style>
+                .st-emotion-cache-ocqkz7.e1f1d6gn4{
+                    align-items: end
+                }
+                </style>
+                """,
+                unsafe_allow_html=True,
+            )
             with st.spinner("Loading..."):
                 trans_df, outputs_df, label_df = load_all_data(conn)
 
@@ -88,12 +97,12 @@ def labelling_component():
             cardcodes = load_unlabeled_cardcodes(labeller_username, total_cardcodes)
 
             st.subheader("Chọn khách hàng")
+            cardcode = select_customer(cardcodes)
+        with col_x_2:
             st.warning(
-                "Sau khi submit kết quả kiểm định phải xóa ô chọn để chọn khách hàng mới",
+                "Khách hàng được lưu sẽ không hiển thị lại",
                 icon="⚠️",
             )
-
-            cardcode = select_customer(cardcodes)
 
         with col1:
             show_input_cols = ["DocEntry", "Date", "item_name", "Category", "Quantity"]
@@ -127,6 +136,7 @@ def labelling_component():
                 ).style.apply(format_color_groups, axis=None),
                 hide_index=True,
                 use_container_width=True,
+                height=290,
             )
 
             st.subheader("Output - Model output")
@@ -143,6 +153,7 @@ def labelling_component():
                 ),
                 hide_index=True,
                 use_container_width=True,
+                height=141,
             )
 
         with col2:
@@ -155,11 +166,22 @@ def labelling_component():
                 """,
                 unsafe_allow_html=True,
             )
+            st.write(
+                """<style>
+                [data-testid="baseButton-primaryFormSubmit"] {
+                    height: 56px;
+                },
+                </style>
+                """,
+                unsafe_allow_html=True,
+            )
             with st.form("label_form", clear_on_submit=True):
+                st.write("#")
                 st.subheader("Phản hồi")
                 feedback_val = st.radio(
                     "Feedback", ["Đồng ý", "Kiểm tra lại"], key="feedback_radio"
                 )
+                st.write("#")
                 st.subheader("Ý kiến")
                 reason_val = st.text_area(
                     label="Ý kiến (nếu có)",
@@ -168,28 +190,34 @@ def labelling_component():
                 )
                 reason_val = None if reason_val.strip() == "" else reason_val
 
-                submitted = st.form_submit_button("SAVE", type="primary")
-                if submitted:
-                    if cardcode is None:
-                        st.warning(
-                            "Hãy chọn 1 cardcode, hoặc xóa đi cardcode đã chọn và chọn lại"
-                        )
-                        st.stop()
-
-                    df_submit = pd.DataFrame(
-                        {
-                            "username": [labeller_username],
-                            "CardCode": [cardcode],
-                            "feedback": [feedback_val],
-                            "reason": [reason_val],
-                        }
+                col_form_1, col_form_2 = st.columns([2, 8])
+                with col_form_1:
+                    submitted = st.form_submit_button(
+                        "SAVE", type="primary", use_container_width=True
                     )
+                with col_form_2:
+                    if submitted:
+                        if cardcode is None:
+                            st.warning("Hãy chọn 1 cardcode")
+                        else:
+                            df_submit = pd.DataFrame(
+                                {
+                                    "username": [labeller_username],
+                                    "CardCode": [cardcode],
+                                    "feedback": [feedback_val],
+                                    "reason": [reason_val],
+                                }
+                            )
 
-                    label_df = pd.concat([df_submit, label_df], ignore_index=True)
-                    with st.spinner("Saving data..."):
-                        label_df.to_csv(LOCAL_LABEL_PATH, index=False)
-                        save_data_gcs(LOCAL_LABEL_PATH, LABEL_PATH, conn=conn)
-                        st.success("Thank you for your response!!!")
+                            label_df = pd.concat(
+                                [df_submit, label_df], ignore_index=True
+                            )
+                            with st.spinner("Saving data..."):
+                                label_df.to_csv(LOCAL_LABEL_PATH, index=False)
+                                save_data_gcs(LOCAL_LABEL_PATH, LABEL_PATH, conn=conn)
+                                st.success("Thank you for your response!!!")
+
+                st.write("#")
 
         st.subheader("All label data")
         st.dataframe(

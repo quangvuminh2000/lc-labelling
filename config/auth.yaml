@@ -4,6 +4,10 @@ cookie:
   name: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiVlx1MDE2OSBNaW5oIFF1YW5nIiwidXNlcm5hbWUiOiJxdWFuZ3ZtMjAwMCIsImV4cF9kYXRlIjoxNzAxMjk1NjMwLjE4MzcwNH0.4mbgyXqttRH-pwuRuoPx51wmzn8uRfjO6w1IjObxg0E
 credentials:
   usernames:
+    quang1210:
+      email: quangvm9@fpt.com.vn
+      name: CDP PGP
+      password: $2b$12$8W.JDpcrbGqqtiVvIL0qdu1YWS89qaE69GXdeJHsCPyw45xOVUPI2
     quang_vuminh:
       email: quang.vuminh@hcmut.edu.vn
       name: quangvm9
