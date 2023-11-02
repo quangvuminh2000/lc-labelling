@@ -6,11 +6,12 @@ from st_files_connection import FilesConnection
 
 from utils import save_data_gcs, load_data_gcs
 
-TRANSACTION_PATH = "lc_labelling_bucket/cdp/transactions.csv"
-OUTPUT_PATH = "lc_labelling_bucket/cdp/outputs_topn.csv"
+TRANSACTION_PATH = "lc_labelling_bucket/cdp/transactions_1.csv"
+OUTPUT_PATH = "lc_labelling_bucket/cdp/outputs_real_1.csv"
 LABEL_PATH = "lc_labelling_bucket/cdp/total_labels.csv"
 LOCAL_LABEL_PATH = "./data/total_labels.csv"
 COLOR_CODES = ["#8bb9d6", "#b2a7d0", "#60bae3", "#a7d6eb", "#9fcdb6", "#fce5cd"]
+IMPORTANCE_COLOR_CODES = {"Cao": "#0285B7", "Trung bình": "#91C3D4", "Thấp": "#CFDFE6"}
 TOP_LIMIT = 10
 
 
@@ -37,10 +38,11 @@ def load_cardcode_label(labeller_name: str):
 
 
 def select_customer(cardcodes):
-    if len(cardcodes) > TOP_LIMIT:
-        chosen_cardcodes = list(cardcodes)[:TOP_LIMIT]
-    else:
-        chosen_cardcodes = cardcodes
+    # if len(cardcodes) > TOP_LIMIT:
+    #     chosen_cardcodes = list(cardcodes)[:TOP_LIMIT]
+    # else:
+    #     chosen_cardcodes = cardcodes
+    chosen_cardcodes = cardcodes
 
     cardcode = st.selectbox(
         "Chọn CardCode khách hàng",
@@ -66,7 +68,16 @@ def load_all_data(conn: FilesConnection):
     except:
         label_df = pd.DataFrame(columns=["username", "CardCode", "feedback", "reason"])
 
+    outputs_df["CardCode"] = outputs_df["real_CardCode"]
+    trans_df["CardCode"] = trans_df["real_CardCode"]
+    trans_df["DocEntry"] = trans_df["real_DocEntry"]
+
     return trans_df, outputs_df, label_df
+
+
+def color_importance(series: pd.Series):
+
+    return series.apply(lambda x: f'background-color: {IMPORTANCE_COLOR_CODES[x]}')
 
 
 def labelling_component():
@@ -83,7 +94,7 @@ def labelling_component():
             st.write(
                 """<style>
                 .st-emotion-cache-ocqkz7.e1f1d6gn4{
-                    align-items: end
+                    align-items: end;
                 }
                 </style>
                 """,
@@ -105,19 +116,27 @@ def labelling_component():
             )
 
         with col1:
-            show_input_cols = ["DocEntry", "Date", "item_name", "Category", "Quantity"]
+            show_input_cols = [
+                "DocEntry",
+                "Date",
+                "ItemName",
+                "LoaiName",
+                "Quantity",
+                "UnitName",
+            ]
             trans_df: pd.DataFrame = trans_df[trans_df["CardCode"] == cardcode][
                 show_input_cols
             ]
 
-            outputs_df = outputs_df[outputs_df["CardCode"] == cardcode][
+            # print(outputs_df[outputs_df["importance_level"] == "Cao"])
+            outputs_df: pd.DataFrame = outputs_df[outputs_df["CardCode"] == cardcode][
                 [
                     "lv1_name",
-                    "lv1_score",
+                    # "lv1_score",
                     "lv2_name",
-                    "lv2_score",
+                    # "lv2_score",
                     "lv3_name",
-                    "lv3_score",
+                    "muc_do_anh_huong",
                 ]
             ]
 
@@ -144,13 +163,11 @@ def labelling_component():
                 outputs_df.rename(
                     columns={
                         "lv1_name": "Cấp 1 - Chuyên Khoa",
-                        "lv1_score": "Cấp 1 - Score",
                         "lv2_name": "Cấp 2 - Nhóm bệnh",
-                        "lv2_score": "Cấp 2 - Score",
                         "lv3_name": "Cấp 3 - Bệnh",
-                        "lv3_score": "Cấp 3 - Score",
+                        "muc_do_anh_huong": "Mức độ ảnh hưởng",
                     }
-                ),
+                ).style.apply(color_importance, subset=["Mức độ ảnh hưởng"]),
                 hide_index=True,
                 use_container_width=True,
                 height=141,
