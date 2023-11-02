@@ -150,6 +150,7 @@ def labelling_component():
                         "ItemName": "Tên sản phẩm",
                         "LoaiName": "Loại",
                         "Quantity": "Số lượng",
+                        "UnitName": "Đơn vị",
                     }
                 ).style.apply(format_color_groups, axis=None),
                 hide_index=True,
