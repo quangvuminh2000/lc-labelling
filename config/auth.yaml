@@ -1,9 +1,17 @@
 cookie:
-  expiry_days: 30
-  key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiVlx1MDE2OSBNaW5oIFF1YW5nIiwidXNlcm5hbWUiOiJxdWFuZ3ZtMjAwMCIsImV4cF9kYXRlIjoxNzAxMzA2MDY0LjAwOTI4OX0.x0Q7F9wD73hl45h4Y69SEBAayiS727NiCrpM3PJZo44
-  name: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiVlx1MDE2OSBNaW5oIFF1YW5nIiwidXNlcm5hbWUiOiJxdWFuZ3ZtMjAwMCIsImV4cF9kYXRlIjoxNzAxMjk1NjMwLjE4MzcwNH0.4mbgyXqttRH-pwuRuoPx51wmzn8uRfjO6w1IjObxg0E
+  expiry_days: 1
+  key: some_signature_key
+  name: some_cookie_name
 credentials:
   usernames:
+    hoangtq15:
+      email: hoangtq15@fpt.com
+      name: Hoang Truong Quang
+      password: $2b$12$ADGNqumL/Fu5.IdwYthslu16HJYb/dDq0SDISkE137aWXTmGnPJGS
+    longld11:
+      email: longld11@fpt.com
+      name: Long LD
+      password: $2b$12$UtZE/z2EJpc9LTdHa78SIe8iHHg9AcldepQ5LP5HV.fqYH5HZ1zDu
     quang1210:
       email: quangvm9@fpt.com.vn
       name: CDP PGP

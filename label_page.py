@@ -11,8 +11,8 @@ OUTPUT_PATH = "lc_labelling_bucket/cdp/tagging_sample.csv"
 LABEL_PATH = "lc_labelling_bucket/cdp/labels/total_labels_{}.csv"
 LOCAL_LABEL_PATH = "./data/total_labels_{}.csv"
 COLOR_CODES = ["#c5dceb", "#d9d3e8", "#b0ddf1", "#d3ebf5", "#cfe6db", "#fdf2e6"]
-IMPORTANCE_COLOR_CODES = {"Cao": "#0285B7", "Trung bình": "#91C3D4", "Thấp": "#CFDFE6"}
-DUOC_SI_COLS = ["duoc_si_1", "duoc_si_2"]
+IMPORTANCE_COLOR_CODES = {"Cao": "#0285B7", "Trung Bình": "#91C3D4", "Thấp": "#CFDFE6"}
+DUOC_SI_COLS = ["duocsi_1", "duocsi_2"]
 TOP_LIMIT = 10
 
 
@@ -107,9 +107,9 @@ def color_importance(series: pd.Series):
 
 
 def labelling_component():
-    st.title("KIỂM ĐỊNH KẾT QUẢ ĐÁNH TAG BỆNH TỪ TOOL TỰ ĐỘNG")
 
     if not st.session_state.to_dict().get("authentication_status", None):
+        st.title("KIỂM ĐỊNH KẾT QUẢ ĐÁNH TAG BỆNH TỪ TOOL TỰ ĐỘNG")
         st.warning("Hãy đăng nhập để sử dụng dịch vụ")
     else:
         labeller_username = st.session_state["username"]
@@ -175,6 +175,7 @@ def labelling_component():
                     "lv2_name",
                     # "lv2_score",
                     "lv3_name",
+                    "icd10_code",
                     "muc_do_anh_huong",
                 ]
             ]
@@ -211,6 +212,7 @@ def labelling_component():
                         "lv1_name": "Cấp 1 - Chuyên Khoa",
                         "lv2_name": "Cấp 2 - Nhóm bệnh",
                         "lv3_name": "Cấp 3 - Bệnh",
+                        "icd10_code": "Mã ICD-10",
                         "muc_do_anh_huong": "Mức độ ảnh hưởng",
                     }
                 ).style.apply(color_importance, subset=["Mức độ ảnh hưởng"]),
