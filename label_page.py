@@ -4,12 +4,12 @@ import numpy as np
 
 from st_files_connection import FilesConnection
 
-from utils import save_data_gcs, load_data_gcs
+from utils import save_data_gcs, load_data_gcs, get_data_gcs
 
 TRANSACTION_PATH = "lc_labelling_bucket/cdp/transaction_sample.csv"
 OUTPUT_PATH = "lc_labelling_bucket/cdp/tagging_sample.csv"
-LABEL_PATH = "lc_labelling_bucket/cdp/total_labels.csv"
-LOCAL_LABEL_PATH = "./data/total_labels.csv"
+LABEL_PATH = "lc_labelling_bucket/cdp/labels/total_labels_{}.csv"
+LOCAL_LABEL_PATH = "./data/total_labels_{}.csv"
 COLOR_CODES = ["#c5dceb", "#d9d3e8", "#b0ddf1", "#d3ebf5", "#cfe6db", "#fdf2e6"]
 IMPORTANCE_COLOR_CODES = {"Cao": "#0285B7", "Trung bình": "#91C3D4", "Thấp": "#CFDFE6"}
 DUOC_SI_COLS = ["duoc_si_1", "duoc_si_2"]
@@ -28,7 +28,7 @@ def format_color_groups(df):
 
 def load_cardcode_label(labeller_name: str):
     try:
-        label_data = pd.read_csv(LOCAL_LABEL_PATH)
+        label_data = pd.read_csv(LOCAL_LABEL_PATH.format(labeller_name))
         cardcode_label = (label_data.query(f'username == "{labeller_name}"'))[
             "CardCode"
         ].unique()
@@ -82,10 +82,10 @@ def color_importance(series: pd.Series):
 def labelling_component():
     st.title("KIỂM ĐỊNH KẾT QUẢ ĐÁNH TAG BỆNH TỪ TOOL TỰ ĐỘNG")
 
-    if not st.session_state["authentication_status"]:
+    if not st.session_state.to_dict().get("authentication_status", None):
         st.warning("Hãy đăng nhập để sử dụng dịch vụ")
-
     else:
+        labeller_username = st.session_state["username"]
         col_x_1, col_x_2, _ = st.columns([1, 1, 2])
         col1, col2 = st.columns([2, 1])
         conn = st.connection("gcs", type=FilesConnection)
@@ -101,15 +101,17 @@ def labelling_component():
             )
             trans_df, outputs_df = load_all_data(conn)
             try:
-                label_df = pd.read_csv(LOCAL_LABEL_PATH)
+                with st.spinner("Loading label data..."):
+                    get_data_gcs(LABEL_PATH.format(labeller_username), LOCAL_LABEL_PATH.format(labeller_username), conn)
+                    label_df = pd.read_csv(LOCAL_LABEL_PATH.format(labeller_username))
             except:
                 label_df = pd.DataFrame(
                     columns=["username", "CardCode", "feedback", "reason"]
                 )
 
-            labeller_username = st.session_state["username"]
             total_cardcodes = set(trans_df["customer_id"].unique())
             cardcodes = load_unlabeled_cardcodes(labeller_username, total_cardcodes)
+
 
             st.subheader("Chọn khách hàng")
             cardcode = select_customer(cardcodes)
@@ -148,6 +150,12 @@ def labelling_component():
 
             st.subheader(
                 f"Input - Chi tiết đơn hàng theo ngày (:blue[{trans_df['bill_id'].nunique()} Đơn hàng])"
+            )
+            st.markdown(
+                """
+                <a href='https://docs.google.com/spreadsheets/d/1EngQ2RbLcFcH-UhOvfPuwdDCF1mKLmngQVRGM21uADw/edit#gid=0'>Danh sách tên thuốc</a>
+                """,
+                unsafe_allow_html=True,
             )
             st.dataframe(
                 trans_df.rename(
@@ -237,8 +245,8 @@ def labelling_component():
                                 [df_submit, label_df], ignore_index=True
                             )
                             with st.spinner("Saving data..."):
-                                label_df.to_csv(LOCAL_LABEL_PATH, index=False)
-                                save_data_gcs(LOCAL_LABEL_PATH, LABEL_PATH, conn=conn)
+                                label_df.to_csv(LOCAL_LABEL_PATH.format(labeller_username), index=False)
+                                save_data_gcs(LOCAL_LABEL_PATH.format(labeller_username), LABEL_PATH.format(labeller_username), conn=conn)
                                 st.success("Thank you for your response!!!")
 
                 st.write("#")
