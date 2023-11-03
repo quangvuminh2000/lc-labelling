@@ -95,17 +95,17 @@ def labelling_component():
                 unsafe_allow_html=True,
             )
             trans_df, outputs_df= load_all_data(conn)
-        try:
-            label_df = pd.read_csv(LOCAL_LABEL_PATH)
-        except:
-            label_df = pd.DataFrame(columns=["username", "CardCode", "feedback", "reason"])
+            try:
+                label_df = pd.read_csv(LOCAL_LABEL_PATH)
+            except:
+                label_df = pd.DataFrame(columns=["username", "CardCode", "feedback", "reason"])
 
             labeller_username = st.session_state["username"]
             total_cardcodes = set(trans_df["customer_id"].unique())
             cardcodes = load_unlabeled_cardcodes(labeller_username, total_cardcodes)
 
-            st.subheader("Chọn khách hàng")
-            cardcode = select_customer(cardcodes)
+        st.subheader("Chọn khách hàng")
+        cardcode = select_customer(cardcodes)
         with col_x_2:
             st.warning(
                 "Khách hàng được lưu sẽ không hiển thị lại",

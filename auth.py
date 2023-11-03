@@ -22,14 +22,13 @@ CONFIG_PATH_LOCAL = "./config/auth.yaml"
 CONFIG_PATH_GCS = "lc_labelling_bucket/auth/auth.yaml"
 
 st.cache_resource
-def get_gcs_auth():
+def get_config_gcs():
     conn = st.connection("gcs", type=FilesConnection)
     get_data_gcs(CONFIG_PATH_GCS, CONFIG_PATH_LOCAL, conn)
     get_data_gcs(CONFIG_DATA_PATH_GCS, CONFIG_DATA_PATH_LOCAL, conn)
 
-
-get_gcs_auth()
 # * IMPORT CONFIGS
+get_config_gcs()
 with open(CONFIG_PATH_LOCAL) as file:
     config = yaml.load(file, Loader=SafeLoader)
 
@@ -45,22 +44,16 @@ def update_config():
         save_data_gcs(CONFIG_PATH_LOCAL, CONFIG_PATH_GCS, conn)
 
         usernames = list(config["credentials"]["usernames"].keys())
-        passwords = [
-            config["credentials"]["usernames"][user]["password"] for user in usernames
-        ]
-        emails = [
-            config["credentials"]["usernames"][user]["email"] for user in usernames
-        ]
+        passwords = [config["credentials"]["usernames"][user]["password"] for user in usernames]
+        emails = [config["credentials"]["usernames"][user]["email"] for user in usernames]
         names = [config["credentials"]["usernames"][user]["name"] for user in usernames]
 
-        config_df = pd.DataFrame(
-            {
-                "username": usernames,
-                "email": emails,
-                "name": names,
-                "password": passwords,
-            }
-        )
+        config_df = pd.DataFrame({
+            "username": usernames,
+            "email": emails,
+            "name": names,
+            "password": passwords
+        })
 
         config_df.to_csv(CONFIG_DATA_PATH_LOCAL, index=False)
         save_data_gcs(CONFIG_DATA_PATH_LOCAL, CONFIG_DATA_PATH_GCS, conn)
@@ -140,7 +133,7 @@ def forgot_password_form(authenticator):
 
 
 # ? VI. FORGOT USERNAME
-def forgot_username_form(authenticator: stauth.Authenticate):
+def forgot_username_form(authenticator):
     try:
         (
             username_of_forgotten_username,
@@ -229,7 +222,7 @@ def authentication_component():
             options=auth_page_names_to_funcs.keys(),
             key="auth_selection",
             index=None,
-            label_visibility="collapsed",
+            label_visibility="collapsed"
         )
 
         if auth_page:
