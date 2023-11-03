@@ -6,11 +6,11 @@ from st_files_connection import FilesConnection
 
 from utils import save_data_gcs, load_data_gcs
 
-TRANSACTION_PATH = "lc_labelling_bucket/cdp/transactions_1.csv"
-OUTPUT_PATH = "lc_labelling_bucket/cdp/outputs_real_1.csv"
+TRANSACTION_PATH = "lc_labelling_bucket/cdp/transaction_sample.csv"
+OUTPUT_PATH = "lc_labelling_bucket/cdp/tagging_sample.csv"
 LABEL_PATH = "lc_labelling_bucket/cdp/total_labels.csv"
 LOCAL_LABEL_PATH = "./data/total_labels.csv"
-COLOR_CODES = ["#8bb9d6", "#b2a7d0", "#60bae3", "#a7d6eb", "#9fcdb6", "#fce5cd"]
+COLOR_CODES = ["#c5dceb", "#d9d3e8", "#b0ddf1", "#d3ebf5", "#cfe6db", "#fdf2e6"]
 IMPORTANCE_COLOR_CODES = {"Cao": "#0285B7", "Trung bình": "#91C3D4", "Thấp": "#CFDFE6"}
 TOP_LIMIT = 10
 
@@ -60,19 +60,13 @@ def load_unlabeled_cardcodes(labeller_name: str, cardcode_total):
     return cardcode_total - labelled_cardcodes
 
 
+st.cache_resource
 def load_all_data(conn: FilesConnection):
-    trans_df = load_data_gcs(TRANSACTION_PATH, conn)
-    outputs_df = load_data_gcs(OUTPUT_PATH, conn)
-    try:
-        label_df = pd.read_csv(LOCAL_LABEL_PATH)
-    except:
-        label_df = pd.DataFrame(columns=["username", "CardCode", "feedback", "reason"])
+    with st.spinner("Loading..."):
+        trans_df = load_data_gcs(TRANSACTION_PATH, conn)
+        outputs_df = load_data_gcs(OUTPUT_PATH, conn)
 
-    outputs_df["CardCode"] = outputs_df["real_CardCode"]
-    trans_df["CardCode"] = trans_df["real_CardCode"]
-    trans_df["DocEntry"] = trans_df["real_DocEntry"]
-
-    return trans_df, outputs_df, label_df
+    return trans_df, outputs_df
 
 
 def color_importance(series: pd.Series):
@@ -80,6 +74,7 @@ def color_importance(series: pd.Series):
 
 
 def labelling_component():
+    print("LABEL")
     st.title("KIỂM ĐỊNH KẾT QUẢ ĐÁNH TAG BỆNH TỪ TOOL TỰ ĐỘNG")
 
     if not st.session_state["authentication_status"]:
@@ -99,11 +94,14 @@ def labelling_component():
                 """,
                 unsafe_allow_html=True,
             )
-            with st.spinner("Loading..."):
-                trans_df, outputs_df, label_df = load_all_data(conn)
+            trans_df, outputs_df= load_all_data(conn)
+        try:
+            label_df = pd.read_csv(LOCAL_LABEL_PATH)
+        except:
+            label_df = pd.DataFrame(columns=["username", "CardCode", "feedback", "reason"])
 
             labeller_username = st.session_state["username"]
-            total_cardcodes = set(trans_df["CardCode"].unique())
+            total_cardcodes = set(trans_df["customer_id"].unique())
             cardcodes = load_unlabeled_cardcodes(labeller_username, total_cardcodes)
 
             st.subheader("Chọn khách hàng")
@@ -116,19 +114,21 @@ def labelling_component():
 
         with col1:
             show_input_cols = [
-                "DocEntry",
-                "Date",
-                "ItemName",
-                "LoaiName",
-                "Quantity",
-                "UnitName",
+                "bill_id",
+                "date",
+                "item_name",
+                "loai_name",
+                "quantity",
+                "unitname",
             ]
-            trans_df: pd.DataFrame = trans_df[trans_df["CardCode"] == cardcode][
+            trans_df: pd.DataFrame = trans_df[trans_df["customer_id"] == cardcode][
                 show_input_cols
             ]
 
             # print(outputs_df[outputs_df["importance_level"] == "Cao"])
-            outputs_df: pd.DataFrame = outputs_df[outputs_df["CardCode"] == cardcode][
+            outputs_df: pd.DataFrame = outputs_df[
+                outputs_df["customer_id"] == cardcode
+            ][
                 [
                     "lv1_name",
                     # "lv1_score",
@@ -140,17 +140,17 @@ def labelling_component():
             ]
 
             st.subheader(
-                f"Input - Chi tiết đơn hàng theo ngày (:blue[{trans_df['DocEntry'].nunique()} Đơn hàng])"
+                f"Input - Chi tiết đơn hàng theo ngày (:blue[{trans_df['bill_id'].nunique()} Đơn hàng])"
             )
             st.dataframe(
                 trans_df.rename(
                     columns={
-                        "DocEntry": "Mã đơn hàng",
-                        "Date": "Ngày mua",
-                        "ItemName": "Tên sản phẩm",
-                        "LoaiName": "Loại",
-                        "Quantity": "Số lượng",
-                        "UnitName": "Đơn vị",
+                        "bill_id": "Mã đơn hàng",
+                        "date": "Ngày mua",
+                        "item_name": "Tên sản phẩm",
+                        "loai_name": "Loại",
+                        "quantity": "Số lượng",
+                        "unitname": "Đơn vị",
                     }
                 ).style.apply(format_color_groups, axis=None),
                 hide_index=True,
@@ -158,7 +158,7 @@ def labelling_component():
                 height=290,
             )
 
-            st.subheader("Output - Model output")
+            st.subheader("Output - Đánh giá theo KH")
             st.dataframe(
                 outputs_df.rename(
                     columns={
@@ -210,7 +210,7 @@ def labelling_component():
                 col_form_1, col_form_2 = st.columns([2, 8])
                 with col_form_1:
                     submitted = st.form_submit_button(
-                        "SAVE", type="primary", use_container_width=True
+                        "**SAVE**", type="primary", use_container_width=True
                     )
                 with col_form_2:
                     if submitted:
