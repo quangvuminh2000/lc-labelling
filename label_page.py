@@ -12,6 +12,7 @@ LABEL_PATH = "lc_labelling_bucket/cdp/total_labels.csv"
 LOCAL_LABEL_PATH = "./data/total_labels.csv"
 COLOR_CODES = ["#c5dceb", "#d9d3e8", "#b0ddf1", "#d3ebf5", "#cfe6db", "#fdf2e6"]
 IMPORTANCE_COLOR_CODES = {"Cao": "#0285B7", "Trung bình": "#91C3D4", "Thấp": "#CFDFE6"}
+DUOC_SI_COLS = ["duoc_si_1", "duoc_si_2"]
 TOP_LIMIT = 10
 
 
@@ -45,7 +46,7 @@ def select_customer(cardcodes):
     chosen_cardcodes = cardcodes
 
     cardcode = st.selectbox(
-        "Chọn CardCode khách hàng",
+        f"Chọn CardCode khách hàng (:blue[còn lại {len(chosen_cardcodes)} KH])",
         chosen_cardcodes,
         index=None,
         placeholder="Chọn cardcode...",
@@ -66,6 +67,11 @@ def load_all_data(conn: FilesConnection):
         trans_df = load_data_gcs(TRANSACTION_PATH, conn)
         outputs_df = load_data_gcs(OUTPUT_PATH, conn)
 
+        # Filter by duoc si
+        current_labeller = st.session_state["username"]
+        mask_labeller = (trans_df[DUOC_SI_COLS] == current_labeller).any(axis="columns")
+        trans_df = trans_df[mask_labeller]
+
     return trans_df, outputs_df
 
 
@@ -74,7 +80,6 @@ def color_importance(series: pd.Series):
 
 
 def labelling_component():
-    print("LABEL")
     st.title("KIỂM ĐỊNH KẾT QUẢ ĐÁNH TAG BỆNH TỪ TOOL TỰ ĐỘNG")
 
     if not st.session_state["authentication_status"]:
@@ -94,23 +99,25 @@ def labelling_component():
                 """,
                 unsafe_allow_html=True,
             )
-            trans_df, outputs_df= load_all_data(conn)
+            trans_df, outputs_df = load_all_data(conn)
             try:
                 label_df = pd.read_csv(LOCAL_LABEL_PATH)
             except:
-                label_df = pd.DataFrame(columns=["username", "CardCode", "feedback", "reason"])
+                label_df = pd.DataFrame(
+                    columns=["username", "CardCode", "feedback", "reason"]
+                )
 
             labeller_username = st.session_state["username"]
             total_cardcodes = set(trans_df["customer_id"].unique())
             cardcodes = load_unlabeled_cardcodes(labeller_username, total_cardcodes)
 
-        st.subheader("Chọn khách hàng")
-        cardcode = select_customer(cardcodes)
-        with col_x_2:
-            st.warning(
-                "Khách hàng được lưu sẽ không hiển thị lại",
-                icon="⚠️",
-            )
+            st.subheader("Chọn khách hàng")
+            cardcode = select_customer(cardcodes)
+            with col_x_2:
+                st.warning(
+                    "Khách hàng được lưu sẽ không hiển thị lại",
+                    icon="⚠️",
+                )
 
         with col1:
             show_input_cols = [

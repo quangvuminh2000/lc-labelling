@@ -22,10 +22,13 @@ CONFIG_PATH_LOCAL = "./config/auth.yaml"
 CONFIG_PATH_GCS = "lc_labelling_bucket/auth/auth.yaml"
 
 st.cache_resource
+
+
 def get_config_gcs():
     conn = st.connection("gcs", type=FilesConnection)
     get_data_gcs(CONFIG_PATH_GCS, CONFIG_PATH_LOCAL, conn)
     get_data_gcs(CONFIG_DATA_PATH_GCS, CONFIG_DATA_PATH_LOCAL, conn)
+
 
 # * IMPORT CONFIGS
 get_config_gcs()
@@ -44,16 +47,22 @@ def update_config():
         save_data_gcs(CONFIG_PATH_LOCAL, CONFIG_PATH_GCS, conn)
 
         usernames = list(config["credentials"]["usernames"].keys())
-        passwords = [config["credentials"]["usernames"][user]["password"] for user in usernames]
-        emails = [config["credentials"]["usernames"][user]["email"] for user in usernames]
+        passwords = [
+            config["credentials"]["usernames"][user]["password"] for user in usernames
+        ]
+        emails = [
+            config["credentials"]["usernames"][user]["email"] for user in usernames
+        ]
         names = [config["credentials"]["usernames"][user]["name"] for user in usernames]
 
-        config_df = pd.DataFrame({
-            "username": usernames,
-            "email": emails,
-            "name": names,
-            "password": passwords
-        })
+        config_df = pd.DataFrame(
+            {
+                "username": usernames,
+                "email": emails,
+                "name": names,
+                "password": passwords,
+            }
+        )
 
         config_df.to_csv(CONFIG_DATA_PATH_LOCAL, index=False)
         save_data_gcs(CONFIG_DATA_PATH_LOCAL, CONFIG_DATA_PATH_GCS, conn)
@@ -74,7 +83,7 @@ def send_email(receiver_mail: str, subject: str, message: str):
 
 
 # ? II. LOGIN
-def login_form(authenticator):
+def login_form(authenticator: stauth.Authenticate):
     authenticator.login("Login", "main")
 
     if st.session_state["authentication_status"] is False:
@@ -181,30 +190,56 @@ def authentication_component():
         config["preauthorized"],
     )
 
+    _, login_col, _ = st.columns([1, 2, 1])
+
     if (not st.session_state["authentication_status"]) and (
         not st.session_state["name"]
     ):
-        st.header("Welcome to LC Labelling Tool")
-        st.subheader("Please choose one")
 
-        un_auth_page_names_to_funcs = {
-            "Sign In": login_form,
-            "Sign Up": register_user_form,
-            "Forgot Password": forgot_password_form,
-            "Forgot Username": forgot_username_form,
-        }
+        # un_auth_page_names_to_funcs = {
+        #     "Sign In": login_form,
+        #     # "Sign Up": register_user_form,
+        #     "Forgot Password": forgot_password_form,
+        #     "Forgot Username": forgot_username_form,
+        # }
 
-        un_auth_page = st.selectbox(
-            "Choose one of the following",
-            placeholder="Choose your option...",
-            label_visibility="hidden",
-            options=un_auth_page_names_to_funcs.keys(),
-            key="un_auth_selection",
-            index=None,
+        # un_auth_page = st.selectbox(
+        #     "Choose one of the following",
+        #     placeholder="Choose your option...",
+        #     label_visibility="hidden",
+        #     options=un_auth_page_names_to_funcs.keys(),
+        #     key="un_auth_selection",
+        #     index=None,
+        # )
+
+        # if un_auth_page:
+        #     un_auth_page_names_to_funcs[un_auth_page](authenticator)
+        st.markdown(
+            """
+            <style>
+            .st-emotion-cache-r421ms.e10yg2by1{
+                border: none;
+                align-content: center;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
         )
-
-        if un_auth_page:
-            un_auth_page_names_to_funcs[un_auth_page](authenticator)
+        st.markdown(
+            """
+            <style>
+            .st-emotion-cache-7ym5gk.ef3psqc7{
+                width: -webkit-fill-available;
+                background-color: #B9D4EB;
+                margin-top: 30px;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+        with login_col:
+            st.header("Welcome to LC Labelling Tool")
+            login_form(authenticator)
 
     # * LOGIN SUCCESSFULLY
     if st.session_state["authentication_status"]:
@@ -222,7 +257,7 @@ def authentication_component():
             options=auth_page_names_to_funcs.keys(),
             key="auth_selection",
             index=None,
-            label_visibility="collapsed"
+            label_visibility="collapsed",
         )
 
         if auth_page:

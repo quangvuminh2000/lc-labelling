@@ -163,5 +163,5 @@ cython_debug/
 .streamlit/
 
 # Data
-data/
-config/
+/data/*
+/config/*
