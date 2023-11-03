@@ -84,7 +84,7 @@ def send_email(receiver_mail: str, subject: str, message: str):
 
 # ? II. LOGIN
 def login_form(authenticator: stauth.Authenticate):
-    authenticator.login("Login", "main")
+    authenticator.login("LOGIN", "main")
 
     if st.session_state["authentication_status"] is False:
         if authenticator.username == "":
@@ -190,12 +190,11 @@ def authentication_component():
         config["preauthorized"],
     )
 
-    _, login_col, _ = st.columns([1, 2, 1])
+    _, login_col, _ = st.columns([3, 4, 3])
 
     if (not st.session_state["authentication_status"]) and (
         not st.session_state["name"]
     ):
-
         # un_auth_page_names_to_funcs = {
         #     "Sign In": login_form,
         #     # "Sign Up": register_user_form,
@@ -214,9 +213,25 @@ def authentication_component():
 
         # if un_auth_page:
         #     un_auth_page_names_to_funcs[un_auth_page](authenticator)
+        # st.markdown(
+        #     """
+        #     <style>
+        #     .st-emotion-cache-r421ms.e10yg2by1{
+        #         border: none;
+        #         align-content: center;
+        #     }
+        #     </style>
+        #     """,
+        #     unsafe_allow_html=True,
+        # )
         st.markdown(
             """
             <style>
+            .st-emotion-cache-7ym5gk.ef3psqc7{
+                width: -webkit-fill-available;
+                background-color: #B9D4EB;
+                margin-top: 30px;
+            }
             .st-emotion-cache-r421ms.e10yg2by1{
                 border: none;
                 align-content: center;
@@ -228,17 +243,14 @@ def authentication_component():
         st.markdown(
             """
             <style>
-            .st-emotion-cache-7ym5gk.ef3psqc7{
-                width: -webkit-fill-available;
-                background-color: #B9D4EB;
-                margin-top: 30px;
+            .welcome-to-lc-labelling-tool{
+                text-align: center;
             }
             </style>
             """,
             unsafe_allow_html=True,
         )
         with login_col:
-            st.header("Welcome to LC Labelling Tool")
             login_form(authenticator)
 
     # * LOGIN SUCCESSFULLY
