@@ -6,6 +6,10 @@ from st_files_connection import FilesConnection
 
 from utils import save_data_gcs, load_data_gcs, get_data_gcs
 
+from pprint import pprint
+
+import time
+
 TRANSACTION_PATH = "lc_labelling_bucket/cdp/transaction_sample.csv"
 OUTPUT_PATH = "lc_labelling_bucket/cdp/tagging_sample.csv"
 LABEL_PATH = "lc_labelling_bucket/cdp/labels/total_labels_{}.csv"
@@ -77,6 +81,32 @@ def load_all_data(conn: FilesConnection):
 
 def color_importance(series: pd.Series):
     return series.apply(lambda x: f"background-color: {IMPORTANCE_COLOR_CODES[x]}")
+
+def clear_widget(key):
+    st.session_state[key] = None
+
+def customer_submit(col, label_df, labeller_username, cardcode, feedback_val, reason_val, conn):
+    with col:
+        if cardcode is None:
+            st.warning("Hãy chọn 1 cardcode")
+        else:
+            df_submit = pd.DataFrame(
+                {
+                    "username": [labeller_username],
+                    "CardCode": [cardcode],
+                    "feedback": [feedback_val],
+                    "reason": [reason_val],
+                }
+            )
+
+            label_df = pd.concat(
+                [df_submit, label_df], ignore_index=True
+            )
+            with st.spinner("Saving data..."):
+                label_df.to_csv(LOCAL_LABEL_PATH.format(labeller_username), index=False)
+                save_data_gcs(LOCAL_LABEL_PATH.format(labeller_username), LABEL_PATH.format(labeller_username), conn=conn)
+                clear_widget("customer_selector")
+                st.success("Thank you for your response!!!")
 
 
 def labelling_component():
@@ -224,34 +254,15 @@ def labelling_component():
 
                 col_form_1, col_form_2 = st.columns([2, 8])
                 with col_form_1:
-                    submitted = st.form_submit_button(
-                        "**SAVE**", type="primary", use_container_width=True
+                    _ = st.form_submit_button(
+                        "**SAVE**", type="primary", use_container_width=True, on_click=customer_submit, args=(col_form_2, label_df, labeller_username, cardcode, feedback_val, reason_val, conn)
                     )
-                with col_form_2:
-                    if submitted:
-                        if cardcode is None:
-                            st.warning("Hãy chọn 1 cardcode")
-                        else:
-                            df_submit = pd.DataFrame(
-                                {
-                                    "username": [labeller_username],
-                                    "CardCode": [cardcode],
-                                    "feedback": [feedback_val],
-                                    "reason": [reason_val],
-                                }
-                            )
 
-                            label_df = pd.concat(
-                                [df_submit, label_df], ignore_index=True
-                            )
-                            with st.spinner("Saving data..."):
-                                label_df.to_csv(LOCAL_LABEL_PATH.format(labeller_username), index=False)
-                                save_data_gcs(LOCAL_LABEL_PATH.format(labeller_username), LABEL_PATH.format(labeller_username), conn=conn)
-                                st.success("Thank you for your response!!!")
 
                 st.write("#")
 
         st.subheader("All label data")
+        label_df = pd.read_csv(LOCAL_LABEL_PATH.format(labeller_username))
         st.dataframe(
             label_df.query(f"username == '{labeller_username}'").rename(
                 columns={
@@ -263,3 +274,5 @@ def labelling_component():
             hide_index=True,
             use_container_width=True,
         )
+
+
