@@ -262,7 +262,14 @@ def labelling_component():
                 st.write("#")
 
         st.subheader("All label data")
-        label_df = pd.read_csv(LOCAL_LABEL_PATH.format(labeller_username))
+        try:
+            with st.spinner("Loading label data..."):
+                get_data_gcs(LABEL_PATH.format(labeller_username), LOCAL_LABEL_PATH.format(labeller_username), conn)
+                label_df = pd.read_csv(LOCAL_LABEL_PATH.format(labeller_username))
+        except:
+            label_df = pd.DataFrame(
+                columns=["username", "CardCode", "feedback", "reason"]
+            )
         st.dataframe(
             label_df.query(f"username == '{labeller_username}'").rename(
                 columns={
