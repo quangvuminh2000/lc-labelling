@@ -6,6 +6,7 @@ def save_data_gcs(data_path: str, to_path: str, conn: FilesConnection):
 
 
 def get_data_gcs(data_path: str, to_path: str, conn: FilesConnection):
+    print(f"Getting file {data_path} from cloud")
     conn.fs.get_file(data_path, to_path)
 
 
