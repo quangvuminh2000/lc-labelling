@@ -110,7 +110,17 @@ def labelling_component():
 
     if not st.session_state.to_dict().get("authentication_status", None):
         st.title("KIỂM ĐỊNH KẾT QUẢ ĐÁNH TAG BỆNH TỪ TOOL TỰ ĐỘNG")
-        st.warning("Hãy đăng nhập để sử dụng dịch vụ")
+        st.write(
+            """
+            <style>
+            .st-emotion-cache-10trblm.e1nzilvr1 {
+                text-align: center;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+        # st.warning("Hãy đăng nhập để sử dụng dịch vụ")
     else:
         labeller_username = st.session_state["username"]
         col_x_1, col_x_2, _ = st.columns([1, 1, 2])
