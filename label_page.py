@@ -258,7 +258,7 @@ def labelling_component():
         trans_df: pd.DataFrame = trans_df[trans_df["customer_id"] == cardcode]
         # print(outputs_df[outputs_df["importance_level"] == "Cao"])
         st.subheader(
-            f"Input - Chi tiết đơn hàng theo ngày (:blue[{trans_df['bill_id'].nunique()}] đơn hàng)"
+            f"Input - Chi tiết đơn hàng theo ngày ( :blue[{trans_df['bill_id'].nunique()} đơn hàng])"
         )
 
         trans_df = trans_df[show_input_cols]
