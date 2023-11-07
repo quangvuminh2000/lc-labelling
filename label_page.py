@@ -409,50 +409,61 @@ def labelling_component():
                         df_submit.loc[lv1_disagree_index, "specialty_labels"] = True
                         df_submit.loc[lv2_disagree_index, "disease_group_labels"] = True
 
-                        if cardcode not in label_df["CardCode"]:
-                            label_df = pd.concat(
-                                [df_submit, label_df], ignore_index=True
-                            )
+                        if (
+                            df_submit.loc[lv1_disagree_index, "specialty_responses"]
+                            == "None"
+                        ).sum() != 0 or (
+                            df_submit.loc[lv2_disagree_index, "disease_group_labels"]
+                            == "None"
+                        ).sum() != 0:
+                            st.warning("Mỗi ô không đồng ý phải có bình luận tương ứng")
                         else:
-                            label_df = label_df[label_df["CardCode"] != cardcode]
-                            label_df = pd.concat(
-                                [df_submit, label_df], ignore_index=True
-                            )
+                            if cardcode not in label_df["CardCode"]:
+                                label_df = pd.concat(
+                                    [df_submit, label_df], ignore_index=True
+                                )
+                            else:
+                                label_df = label_df[label_df["CardCode"] != cardcode]
+                                label_df = pd.concat(
+                                    [df_submit, label_df], ignore_index=True
+                                )
 
-                        with st.spinner("Saving data..."):
-                            label_df.to_csv(
-                                LOCAL_LABEL_PATH.format(labeller_username),
-                                index=False,
-                            )
-                            save_data_gcs(
-                                LOCAL_LABEL_PATH.format(labeller_username),
-                                LABEL_PATH.format(labeller_username),
-                                conn=conn,
-                            )
-                            if cardcode in pending_cardcodes:
-                                # Remove from pending list
-                                postponed_df = postponed_df[
-                                    postponed_df["CardCode"] != cardcode
-                                ]
-                                with st.spinner("Saving postponed data..."):
-                                    postponed_df.to_csv(
-                                        LOCAL_PENDING_CUSTOMER_PATH.format(
-                                            labeller_username
-                                        ),
-                                        index=False,
-                                    )
-                                    save_data_gcs(
-                                        LOCAL_PENDING_CUSTOMER_PATH.format(
-                                            labeller_username
-                                        ),
-                                        PENDING_CUSTOMER_PATH.format(labeller_username),
-                                        conn=conn,
-                                    )
-                                    st.session_state["n_pending_cardcodes"] -= 1
+                            with st.spinner("Saving data..."):
+                                label_df.to_csv(
+                                    LOCAL_LABEL_PATH.format(labeller_username),
+                                    index=False,
+                                )
+                                save_data_gcs(
+                                    LOCAL_LABEL_PATH.format(labeller_username),
+                                    LABEL_PATH.format(labeller_username),
+                                    conn=conn,
+                                )
+                                if cardcode in pending_cardcodes:
+                                    # Remove from pending list
+                                    postponed_df = postponed_df[
+                                        postponed_df["CardCode"] != cardcode
+                                    ]
+                                    with st.spinner("Saving postponed data..."):
+                                        postponed_df.to_csv(
+                                            LOCAL_PENDING_CUSTOMER_PATH.format(
+                                                labeller_username
+                                            ),
+                                            index=False,
+                                        )
+                                        save_data_gcs(
+                                            LOCAL_PENDING_CUSTOMER_PATH.format(
+                                                labeller_username
+                                            ),
+                                            PENDING_CUSTOMER_PATH.format(
+                                                labeller_username
+                                            ),
+                                            conn=conn,
+                                        )
+                                        st.session_state["n_pending_cardcodes"] -= 1
 
-                            st.session_state["n_unlabeled_cardcodes"] -= 1
-                            st.session_state["n_labeled_cardcodes"] += 1
-                            st.rerun()
+                                st.session_state["n_unlabeled_cardcodes"] -= 1
+                                st.session_state["n_labeled_cardcodes"] += 1
+                                st.rerun()
                 elif postponed:
                     if cardcode is None:
                         st.warning("Hãy chọn 1 cardcode")
