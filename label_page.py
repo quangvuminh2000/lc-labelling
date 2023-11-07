@@ -96,6 +96,7 @@ def aggrid_table(df: pd.DataFrame):
         update_mode=GridUpdateMode.VALUE_CHANGED | GridUpdateMode.SELECTION_CHANGED,
         columns_auto_size_mode=ColumnsAutoSizeMode.FIT_ALL_COLUMNS_TO_VIEW,
         allow_unsafe_jscode=True,
+        enable_enterprise_modules=False
     )
 
     return outputs_grid
@@ -305,13 +306,13 @@ def labelling_component():
 
             col_form_1, col_form_2, col_form_3 = st.columns([2, 2, 4])
             with col_form_1:
-                submitted = st.form_submit_button(
-                    "**SAVE**", type="primary", use_container_width=True
+                postponed = st.form_submit_button(
+                    "**PENDING**", type="secondary", use_container_width=True
                 )
 
             with col_form_2:
-                postponed = st.form_submit_button(
-                    "**PENDING**", type="secondary", use_container_width=True
+                submitted = st.form_submit_button(
+                    "**SAVE**", type="primary", use_container_width=True
                 )
 
             with col_form_3:
@@ -453,7 +454,7 @@ def labelling_component():
                                 conn=conn,
                             )
 
-        st.subheader("Dữ liệu đã label")
+        st.subheader("Pending - Danh sách KH")
         try:
             with st.spinner("Loading label data..."):
                 # get_data_gcs(
@@ -495,8 +496,8 @@ def labelling_component():
 
         all_label_df = (
             pd.concat([label_df, postponed_df], ignore_index=True)
-            .sort_values(by=["status"], ascending=[True])
+            .sort_values(by=["status"], ascending=[False])
             .drop_duplicates(subset=["CardCode"])
             .sort_values(by=["CardCode"], ascending=[True])
         )
-        st.dataframe(all_label_df, use_container_width=True)
+        st.dataframe(all_label_df, use_container_width=True, hide_index=True)
