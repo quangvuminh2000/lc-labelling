@@ -85,10 +85,10 @@ def color_importance(series: pd.Series):
     return series.apply(lambda x: f"background-color: {IMPORTANCE_COLOR_CODES[x]}")
 
 
-def aggrid_table(df: pd.DataFrame):
+def aggrid_table(df: pd.DataFrame, edit_col):
     gd = GridOptionsBuilder.from_dataframe(df)
     gd.configure_selection(selection_mode="multiple", use_checkbox=True)
-    gd.configure_columns("Phản hồi", editable=True)
+    gd.configure_columns(edit_col, editable=True)
     grid_options = gd.build()
     grid_options["defaultColDef"]["wrapText"] = True
     grid_options["defaultColDef"]["autoHeight"] = True
@@ -254,15 +254,15 @@ def labelling_component():
                 )
 
         # with col1:
-        show_input_cols = ["date", "item_name", "ingredients", "unitname", "bill_id"]
-        trans_df: pd.DataFrame = trans_df[trans_df["customer_id"] == cardcode][
-            show_input_cols
-        ]
-
+        show_input_cols = ["date", "item_name", "ingredients", "unitname"]
+        trans_df: pd.DataFrame = trans_df[trans_df["customer_id"] == cardcode]
         # print(outputs_df[outputs_df["importance_level"] == "Cao"])
         st.subheader(
             f"Input - Chi tiết đơn hàng theo ngày (:blue[{trans_df['bill_id'].nunique()}] đơn hàng)"
         )
+
+        trans_df = trans_df[show_input_cols]
+
         st.dataframe(
             trans_df.rename(
                 columns={
@@ -349,7 +349,7 @@ def labelling_component():
                         "response": "Phản hồi chuyên khoa",
                     }
                 )
-                grid_output_lv1 = aggrid_table(outputs_lv1)
+                grid_output_lv1 = aggrid_table(outputs_lv1, "Phản hồi chuyên khoa")
 
             with output_col_2:
                 outputs_lv2 = outputs_lv2.rename(
@@ -358,7 +358,7 @@ def labelling_component():
                         "response": "Phản hồi nhóm bệnh",
                     }
                 )
-                grid_output_lv2 = aggrid_table(outputs_lv2)
+                grid_output_lv2 = aggrid_table(outputs_lv2, "Phản hồi nhóm bệnh")
 
             col_form_1, col_form_2, col_form_3 = st.columns([2, 2, 4])
             with col_form_1:
