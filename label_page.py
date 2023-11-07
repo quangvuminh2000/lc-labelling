@@ -1,9 +1,13 @@
 import streamlit as st
 import pandas as pd
 
+import streamlit.components.v1 as components
+
 from st_files_connection import FilesConnection
-from st_aggrid import AgGrid, GridUpdateMode, ColumnsAutoSizeMode
+from st_aggrid import AgGrid, GridUpdateMode, ColumnsAutoSizeMode, DataReturnMode
 from st_aggrid.grid_options_builder import GridOptionsBuilder
+
+from streamlit_extras.metric_cards import style_metric_cards
 
 from utils import save_data_gcs, load_data_gcs, get_data_gcs
 
@@ -46,10 +50,10 @@ def select_customer(cardcodes):
     chosen_cardcodes = cardcodes
 
     cardcode = st.selectbox(
-        f"Chọn CardCode khách hàng (:blue[còn lại {len(chosen_cardcodes)} KH])",
+        f"Chọn mã khách hàng (:blue[còn lại {len(chosen_cardcodes)} KH])",
         chosen_cardcodes,
         index=None,
-        placeholder="Chọn cardcode...",
+        placeholder="Chọn mã khách hàng...",
         key="customer_selector",
     )
 
@@ -96,20 +100,57 @@ def aggrid_table(df: pd.DataFrame):
         update_mode=GridUpdateMode.VALUE_CHANGED | GridUpdateMode.SELECTION_CHANGED,
         columns_auto_size_mode=ColumnsAutoSizeMode.FIT_ALL_COLUMNS_TO_VIEW,
         allow_unsafe_jscode=True,
-        enable_enterprise_modules=False
+        enable_enterprise_modules=False,
     )
 
     return outputs_grid
 
 
+def grid_clickable(df: pd.DataFrame):
+    gd = GridOptionsBuilder.from_dataframe(df)
+    gd.configure_selection()
+    selection = AgGrid(
+        df,
+        gridOptions=gd.build(),
+        update_mode=GridUpdateMode.MODEL_CHANGED,
+        columns_auto_size_mode=ColumnsAutoSizeMode.FIT_CONTENTS,
+        data_return_mode=DataReturnMode.AS_INPUT,
+        allow_unsafe_jscode=True,
+        enable_enterprise_modules=False,
+    )
+
+    return selection
+
+
+def change_metric_color(wgt_txt, wch_color="#000000"):
+    html_str = (
+        """
+        <script>
+            var elements = window.parent.document.querySelectorAll('*'), i;
+            for (i = 0; i < elements.length; ++i) { if (elements[i].innerText == |wgt_txt|) elements[i].style.color = '"""
+        + wch_color
+        + """'; }
+        </script>
+        """
+    )
+
+    html_str = html_str.replace("|wgt_txt|", "'" + wgt_txt + "'")
+    components.html(f"{html_str}", height=0, width=0)
+    # st.write(html_str, unsafe_allow_html=True)
+
+
 def labelling_component():
     if not st.session_state.to_dict().get("authentication_status", None):
         pass
-        # st.warning("Hãy đăng nhập để sử dụng dịch vụ")
     else:
         labeller_username = st.session_state["username"]
-        col_x_1, col_x_2, _ = st.columns([1, 2, 3])
-        col1, col2 = st.columns([1, 1])
+        (
+            col_x_1,
+            col_x_2,
+            col_status_unlabeled,
+            col_status_pending,
+            col_status_labeled,
+        ) = st.columns([1, 2, 1, 1, 1])
         conn = st.connection("gcs", type=FilesConnection)
 
         # ? Static data
@@ -162,7 +203,37 @@ def labelling_component():
 
         total_cardcodes = set(trans_df["customer_id"].unique())
         cardcodes = load_unlabeled_cardcodes(labeller_username, total_cardcodes)
-        pending_cardcodes = postponed_df["CardCode"].unique()
+        pending_cardcodes = set(postponed_df["CardCode"].unique())
+
+        # ? Status cards
+        st.session_state["n_unlabeled_cardcodes"] = len(cardcodes) - len(
+            pending_cardcodes
+        )
+        st.session_state["n_labeled_cardcodes"] = len(total_cardcodes) - len(cardcodes)
+        st.session_state["n_pending_cardcodes"] = len(pending_cardcodes)
+        col_status_unlabeled.metric(
+            label="KH chưa dán nhãn", value=st.session_state["n_unlabeled_cardcodes"]
+        )
+        col_status_labeled.metric(
+            label="KH đã dán nhãn", value=st.session_state["n_labeled_cardcodes"]
+        )
+        col_status_pending.metric(
+            label="KH khó", value=st.session_state["n_pending_cardcodes"]
+        )
+        style_metric_cards(border_left_color=None)
+        change_metric_color(str(st.session_state["n_unlabeled_cardcodes"]), "#92C580")
+        change_metric_color(str(st.session_state["n_pending_cardcodes"]), "#B1B1B1")
+        change_metric_color(str(st.session_state["n_labeled_cardcodes"]), "#F9B064")
+        st.write(
+            """
+            <style>
+            iframe[data-testid="stIFrame"] {
+                display: none;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
 
         with col_x_1:
             st.write(
@@ -183,34 +254,15 @@ def labelling_component():
                 )
 
         # with col1:
-        show_input_cols = [
-            "date",
-            "item_name",
-            "ingredients",
-            "unitname",
-        ]
+        show_input_cols = ["date", "item_name", "ingredients", "unitname", "bill_id"]
         trans_df: pd.DataFrame = trans_df[trans_df["customer_id"] == cardcode][
             show_input_cols
         ]
 
         # print(outputs_df[outputs_df["importance_level"] == "Cao"])
-        st.subheader(f"Input - Chi tiết đơn hàng theo ngày")
-        st.write(
-            """<style>
-            .st-emotion-cache-ocqkz7.e1f1d6gn4{
-                align-items: start;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True,
+        st.subheader(
+            f"Input - Chi tiết đơn hàng theo ngày (:blue[{trans_df['bill_id'].nunique()}] đơn hàng)"
         )
-        th_props = [
-            ("font-size", "14px"),
-            ("font-weight", "bold"),
-            ("color", "#000000"),
-            ("background-color", "#f7ffff"),
-        ]
-        table_styles = [dict(selector="th", props=th_props)]
         st.dataframe(
             trans_df.rename(
                 columns={
@@ -219,9 +271,7 @@ def labelling_component():
                     "ingredients": "Hoạt chất",
                     "unitname": "Đơn vị",
                 }
-            )
-            .style.apply(format_color_groups, axis=None)
-            .set_table_styles(table_styles),
+            ).style.apply(format_color_groups, axis=None),
             hide_index=True,
             use_container_width=True,
             height=300,
@@ -294,13 +344,19 @@ def labelling_component():
 
             with output_col_1:
                 outputs_lv1 = outputs_lv1.rename(
-                    columns={"lv1_name": "Tên chuyên khoa", "response": "Phản hồi"}
+                    columns={
+                        "lv1_name": "Tên chuyên khoa",
+                        "response": "Phản hồi chuyên khoa",
+                    }
                 )
                 grid_output_lv1 = aggrid_table(outputs_lv1)
 
             with output_col_2:
                 outputs_lv2 = outputs_lv2.rename(
-                    columns={"lv2_name": "Tên nhóm bệnh", "response": "Phản hồi"}
+                    columns={
+                        "lv2_name": "Tên nhóm bệnh",
+                        "response": "Phản hồi nhóm bệnh",
+                    }
                 )
                 grid_output_lv2 = aggrid_table(outputs_lv2)
 
@@ -392,6 +448,10 @@ def labelling_component():
                                         PENDING_CUSTOMER_PATH.format(labeller_username),
                                         conn=conn,
                                     )
+                                    st.session_state["n_pending_cardcodes"] -= 1
+
+                            st.session_state["n_unlabeled_cardcodes"] -= 1
+                            st.session_state["n_labeled_cardcodes"] += 1
                             st.rerun()
                 elif postponed:
                     if cardcode is None:
@@ -443,7 +503,7 @@ def labelling_component():
                                 [df_pending, postponed_df], ignore_index=True
                             )
 
-                        with st.spinner("Saving postponed data..."):
+                        with st.spinner("Saving postponed data...", cache=True):
                             postponed_df.to_csv(
                                 LOCAL_PENDING_CUSTOMER_PATH.format(labeller_username),
                                 index=False,
@@ -453,8 +513,10 @@ def labelling_component():
                                 PENDING_CUSTOMER_PATH.format(labeller_username),
                                 conn=conn,
                             )
+                            st.session_state["n_unlabeled_cardcodes"] -= 1
+                            st.session_state["n_pending_cardcodes"] += 1
 
-        st.subheader("Pending - Danh sách KH")
+        st.subheader("Danh sách KH đã dán nhãn")
         try:
             with st.spinner("Loading label data..."):
                 # get_data_gcs(
@@ -494,10 +556,20 @@ def labelling_component():
         postponed_df["status"] = "PENDING"
         postponed_df = postponed_df.drop_duplicates(subset=["CardCode"])
 
-        all_label_df = (
-            pd.concat([label_df, postponed_df], ignore_index=True)
-            .sort_values(by=["status"], ascending=[False])
-            .drop_duplicates(subset=["CardCode"])
-            .sort_values(by=["CardCode"], ascending=[True])
+        all_label_df = pd.concat(
+            [label_df, postponed_df], ignore_index=True
+        ).sort_values(by=["status", "CardCode"], ascending=[False, True])
+
+        st.dataframe(
+            all_label_df.rename(columns={"CardCode": "Mã khách hàng"}),
+            use_container_width=False,
+            hide_index=True,
         )
-        st.dataframe(all_label_df, use_container_width=True, hide_index=True)
+        # selected = grid_clickable(
+        #     all_label_df.rename(columns={"CardCode": "Mã khách hàng"})
+        # )
+        # if len(selected["selected_rows"]) != 0:
+        #     st.session_state["customer_pending_selector"] = selected["selected_rows"][
+        #         0
+        #     ]["Mã khách hàng"]
+        #     st.stop()

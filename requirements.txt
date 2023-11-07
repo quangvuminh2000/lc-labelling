@@ -8,3 +8,4 @@ quick-mailer==2022.2.22
 python-dotenv==1.0.0
 pyyaml==6.0.1
 streamlit-aggrid==0.3.4.post3
+streamlit-extras==0.3.5
