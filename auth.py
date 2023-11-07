@@ -195,17 +195,6 @@ def authentication_component():
     if (not st.session_state["authentication_status"]) and (
         not st.session_state["name"]
     ):
-        st.title("KIỂM ĐỊNH KẾT QUẢ ĐÁNH TAG BỆNH TỪ TOOL TỰ ĐỘNG")
-        st.write(
-            """
-            <style>
-            .st-emotion-cache-10trblm.e1nzilvr1 {
-                text-align: center;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
         # un_auth_page_names_to_funcs = {
         #     "Sign In": login_form,
         #     # "Sign Up": register_user_form,
@@ -245,7 +234,9 @@ def authentication_component():
             }
             .st-emotion-cache-r421ms.e10yg2by1{
                 border: none;
-                align-content: center;
+                display: flex;
+                align-self: center;
+                width: 60%;
             }
             </style>
             """,
@@ -262,6 +253,17 @@ def authentication_component():
             unsafe_allow_html=True,
         )
         with login_col:
+            st.title("KIỂM ĐỊNH KẾT QUẢ ĐÁNH TAG BỆNH TỪ TOOL TỰ ĐỘNG")
+            st.write(
+                """
+                <style>
+                .st-emotion-cache-10trblm.e1nzilvr1 {
+                    text-align: center;
+                }
+                </style>
+                """,
+                unsafe_allow_html=True,
+            )
             login_form(authenticator)
 
     # * LOGIN SUCCESSFULLY
