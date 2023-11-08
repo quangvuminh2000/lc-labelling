@@ -11,5 +11,6 @@ def get_data_gcs(data_path: str, to_path: str, conn: FilesConnection):
 
 
 def load_data_gcs(data_path: str, conn: FilesConnection):
+    print(f"Loading static data {data_path} from cloud")
     df = conn.read(data_path, input_format="csv", ttl=60)
     return df

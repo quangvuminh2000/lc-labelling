@@ -270,23 +270,23 @@ def authentication_component():
     if st.session_state["authentication_status"]:
         st.sidebar.write(f"Welcome **{st.session_state['name']}**")
         authenticator.logout("Logout", "sidebar", key="logout_btn")
-        auth_page_names_to_funcs = {
-            "Reset Password": reset_password_form,
-            "Update User Details": update_user_details,
-        }
+        # auth_page_names_to_funcs = {
+        #     "Reset Password": reset_password_form,
+        #     "Update User Details": update_user_details,
+        # }
 
-        st.sidebar.subheader("Settings")
-        auth_page = st.sidebar.selectbox(
-            "Settings",
-            placeholder="Choose your option...",
-            options=auth_page_names_to_funcs.keys(),
-            key="auth_selection",
-            index=None,
-            label_visibility="collapsed",
-        )
+        # st.sidebar.subheader("Settings")
+        # auth_page = st.sidebar.selectbox(
+        #     "Settings",
+        #     placeholder="Choose your option...",
+        #     options=auth_page_names_to_funcs.keys(),
+        #     key="auth_selection",
+        #     index=None,
+        #     label_visibility="collapsed",
+        # )
 
-        if auth_page:
-            auth_page_names_to_funcs[auth_page](authenticator)
+        # if auth_page:
+        #     auth_page_names_to_funcs[auth_page](authenticator)
 
 
 if __name__ == "__main__":
