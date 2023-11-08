@@ -451,6 +451,30 @@ def labelling_component():
                         "disease_group_responses": "response",
                     }
                 )
+            elif cardcode in pending_cardcodes:
+                outputs_df: pd.DataFrame = postponed_df[postponed_df["CardCode"] == cardcode]
+
+                pre_selected_specialties = outputs_df[
+                    outputs_df["specialty_labels"]
+                ].index.to_list()
+                pre_selected_disease_groups = outputs_df[
+                    outputs_df["disease_group_labels"]
+                ].index.to_list()
+
+                outputs_lv1 = outputs_df[["specialties", "specialty_responses"]].rename(
+                    columns={
+                        "specialties": "lv1_name",
+                        "specialty_responses": "response",
+                    }
+                )
+                outputs_lv2 = outputs_df[
+                    ["disease_groups", "disease_group_responses"]
+                ].rename(
+                    columns={
+                        "disease_groups": "lv2_name",
+                        "disease_group_responses": "response",
+                    }
+                )
             else:
                 outputs_df: pd.DataFrame = outputs_df[
                     outputs_df["customer_id"] == cardcode
