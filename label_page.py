@@ -627,7 +627,7 @@ def labelling_component():
 
                                     st.session_state["n_unlabeled_cardcodes"] -= 1
                                     st.session_state["n_labeled_cardcodes"] += 1
-                        st.rerun()
+                    st.rerun()
         # with col1:
         show_input_cols = ["date", "item_name", "ingredients", "unitname"]
         trans_df: pd.DataFrame = trans_df[trans_df["customer_id"] == cardcode]
