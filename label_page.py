@@ -295,24 +295,30 @@ def labelling_component():
 
         # * WITH BUTTON
         def increase_cardcode():
-            if not st.session_state["customer_selector"]:
-                st.session_state["customer_selector"] = filtered_cardcodes[0]
+            if len(filtered_cardcodes) == 0:
+                st.session_state["customer_selector"] = None
             else:
-                current_idx = filtered_cardcodes.index(st.session_state["customer_selector"])
-                if current_idx < len(filtered_cardcodes) - 1:
-                    st.session_state["customer_selector"] = filtered_cardcodes[current_idx+1]
-                else:
+                if not st.session_state["customer_selector"]:
                     st.session_state["customer_selector"] = filtered_cardcodes[0]
+                else:
+                    current_idx = filtered_cardcodes.index(st.session_state["customer_selector"])
+                    if current_idx < len(filtered_cardcodes) - 1:
+                        st.session_state["customer_selector"] = filtered_cardcodes[current_idx+1]
+                    else:
+                        st.session_state["customer_selector"] = filtered_cardcodes[0]
 
         def decrease_cardcode():
-            if not st.session_state["customer_selector"]:
-                st.session_state["customer_selector"] = list(filtered_cardcodes)[0]
+            if len(filtered_cardcodes) == 0:
+                st.session_state["customer_selector"] = None
             else:
-                current_idx = filtered_cardcodes.index(st.session_state["customer_selector"])
-                if current_idx > 0:
-                    st.session_state["customer_selector"] = filtered_cardcodes[current_idx-1]
+                if not st.session_state["customer_selector"]:
+                    st.session_state["customer_selector"] = list(filtered_cardcodes)[0]
                 else:
-                    st.session_state["customer_selector"] = filtered_cardcodes[-1]
+                    current_idx = filtered_cardcodes.index(st.session_state["customer_selector"])
+                    if current_idx > 0:
+                        st.session_state["customer_selector"] = filtered_cardcodes[current_idx-1]
+                    else:
+                        st.session_state["customer_selector"] = filtered_cardcodes[-1]
 
         next_btn_col.button("**NEXT**", key="btn_next", on_click=increase_cardcode)
         st.write(
