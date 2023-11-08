@@ -11,6 +11,8 @@ from streamlit_extras.metric_cards import style_metric_cards
 
 from utils import save_data_gcs, load_data_gcs, get_data_gcs
 
+from components.status_filter import status_filter
+
 TRANSACTION_PATH = "lc_labelling_bucket/cdp/transaction_sample.csv"
 OUTPUT_PATH = "lc_labelling_bucket/cdp/tagging_sample.csv"
 LABEL_PATH = "lc_labelling_bucket/cdp/labels/total_labels_{}_alpha.csv"
@@ -47,14 +49,14 @@ def select_customer(cardcodes):
     #     chosen_cardcodes = list(cardcodes)[:TOP_LIMIT]
     # else:
     #     chosen_cardcodes = cardcodes
-    chosen_cardcodes = cardcodes
 
-    cardcode = st.selectbox(
-        f"Chọn mã khách hàng (:blue[còn lại {len(chosen_cardcodes)} KH])",
-        chosen_cardcodes,
+    cardcode = st.sidebar.selectbox(
+        "Chọn khách hàng",
+        cardcodes,
         index=None,
         placeholder="Chọn mã khách hàng...",
         key="customer_selector",
+        label_visibility="hidden",
     )
 
     return cardcode
@@ -65,13 +67,11 @@ def load_unlabeled_cardcodes(labeller_name: str, cardcode_total):
     return cardcode_total - labelled_cardcodes
 
 
-st.cache_data
-
-
-def load_all_data(conn: FilesConnection):
+@st.cache_data
+def load_all_data(_conn: FilesConnection):
     with st.spinner("Loading..."):
-        trans_df = load_data_gcs(TRANSACTION_PATH, conn)
-        outputs_df = load_data_gcs(OUTPUT_PATH, conn)
+        trans_df = load_data_gcs(TRANSACTION_PATH, _conn)
+        outputs_df = load_data_gcs(OUTPUT_PATH, _conn)
 
         # Filter by duoc si
         current_labeller = st.session_state["username"]
@@ -136,7 +136,6 @@ def change_metric_color(wgt_txt, wch_color="#000000"):
 
     html_str = html_str.replace("|wgt_txt|", "'" + wgt_txt + "'")
     components.html(f"{html_str}", height=0, width=0)
-    # st.write(html_str, unsafe_allow_html=True)
 
 
 def labelling_component():
@@ -145,12 +144,10 @@ def labelling_component():
     else:
         labeller_username = st.session_state["username"]
         (
-            col_x_1,
-            col_x_2,
-            col_status_unlabeled,
-            col_status_pending,
             col_status_labeled,
-        ) = st.columns([1, 2, 1, 1, 1])
+            col_status_pending,
+            col_status_unlabeled,
+        ) = st.columns([1, 1, 1])
         conn = st.connection("gcs", type=FilesConnection)
 
         # ? Static data
@@ -203,7 +200,9 @@ def labelling_component():
 
         total_cardcodes = set(trans_df["customer_id"].unique())
         cardcodes = load_unlabeled_cardcodes(labeller_username, total_cardcodes)
+        labelled_cardcodes = load_cardcode_label(labeller_username)
         pending_cardcodes = set(postponed_df["CardCode"].unique())
+        unlabeled_cardcodes = total_cardcodes - labelled_cardcodes - pending_cardcodes
 
         # ? Status cards
         st.session_state["n_unlabeled_cardcodes"] = len(cardcodes) - len(
@@ -212,18 +211,19 @@ def labelling_component():
         st.session_state["n_labeled_cardcodes"] = len(total_cardcodes) - len(cardcodes)
         st.session_state["n_pending_cardcodes"] = len(pending_cardcodes)
         col_status_unlabeled.metric(
-            label="KH chưa dán nhãn", value=st.session_state["n_unlabeled_cardcodes"]
+            label="Chưa hoàn tất", value=f'{st.session_state["n_unlabeled_cardcodes"]:,}'
         )
         col_status_labeled.metric(
-            label="KH đã dán nhãn", value=st.session_state["n_labeled_cardcodes"]
+            label="Hoàn tất", value=f'{st.session_state["n_labeled_cardcodes"]:,}'
         )
         col_status_pending.metric(
-            label="KH khó", value=st.session_state["n_pending_cardcodes"]
+            label="Suy nghĩ lại", value=f'{st.session_state["n_pending_cardcodes"]:,}'
         )
-        style_metric_cards(border_left_color=None)
-        change_metric_color(str(st.session_state["n_unlabeled_cardcodes"]), "#92C580")
-        change_metric_color(str(st.session_state["n_pending_cardcodes"]), "#B1B1B1")
-        change_metric_color(str(st.session_state["n_labeled_cardcodes"]), "#F9B064")
+        style_metric_cards(border_radius_px=10)
+        change_metric_color(f'{st.session_state["n_labeled_cardcodes"]:,}', "#92C580")
+        change_metric_color(f'{st.session_state["n_pending_cardcodes"]:,}', "#5b5b5b")
+        change_metric_color(f'{st.session_state["n_unlabeled_cardcodes"]:,}', "#F9B064")
+
         st.write(
             """
             <style>
@@ -235,47 +235,101 @@ def labelling_component():
             unsafe_allow_html=True,
         )
 
-        with col_x_1:
-            st.write(
-                """<style>
-                .st-emotion-cache-1r6slb0 {
-                    align-self: end;
-                }
-                </style>
-                """,
-                unsafe_allow_html=True,
-            )
-            st.subheader("Chọn khách hàng")
-            cardcode = select_customer(cardcodes)
-            with col_x_2:
-                st.warning(
-                    "Chỉ hiển thị ***khách hàng chưa label*** hoặc ***khách hàng pending***",
-                    icon="⚠️",
-                )
-
-        # with col1:
-        show_input_cols = ["date", "item_name", "ingredients", "unitname"]
-        trans_df: pd.DataFrame = trans_df[trans_df["customer_id"] == cardcode]
-        # print(outputs_df[outputs_df["importance_level"] == "Cao"])
-        st.subheader(
-            f"Input - Chi tiết đơn hàng theo ngày ( :blue[{trans_df['bill_id'].nunique()} đơn hàng])"
+        st.write(
+            """<style>
+            .st-emotion-cache-1r6slb0 {
+                align-self: end;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True,
         )
 
-        trans_df = trans_df[show_input_cols]
-
-        st.dataframe(
-            trans_df.rename(
-                columns={
-                    "date": "Ngày mua",
-                    "item_name": "Tên thuốc",
-                    "ingredients": "Hoạt chất",
-                    "unitname": "Đơn vị",
-                }
-            ).style.apply(format_color_groups, axis=None),
-            hide_index=True,
-            use_container_width=True,
-            height=300,
+        st.sidebar.header("1. Trạng thái khách hàng")
+        status_list = ["Hoàn tất", "Suy nghĩ lại", "Chưa hoàn tất"]
+        customer_status = status_filter(
+            status_list,
+            sidebar=True,
+            name="Trạng thái khách hàng",
+            placeholder="Chọn trạng thái",
+            name_visibility="hidden",
         )
+
+        st.sidebar.header("2. Danh sách khách hàng")
+        filtered_cardcodes = set()
+
+        if customer_status == []:
+            filtered_cardcodes = total_cardcodes
+        else:
+            if "Hoàn tất" in customer_status:
+                filtered_cardcodes.update(labelled_cardcodes)
+            if "Suy nghĩ lại" in customer_status:
+                filtered_cardcodes.update(pending_cardcodes)
+            if "Chưa hoàn tất" in customer_status:
+                filtered_cardcodes.update(unlabeled_cardcodes)
+
+        _, back_btn_col, next_btn_col, _ = st.columns([2, 1, 1, 2])
+
+        st.write(
+            """<style>
+            [data-testid="baseButton-secondary"] {
+                margin-top: 1rem;
+                height: 56px;
+                width: -webkit-fill-available;
+            },
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
+        filtered_cardcodes = sorted(list(filtered_cardcodes))
+        cardcode = select_customer(filtered_cardcodes)
+        # print(cardcode)
+
+        cardcode_status = None
+        if cardcode in labelled_cardcodes:
+            cardcode_status = "Hoàn tất"
+        elif cardcode in unlabeled_cardcodes:
+            cardcode_status = "Chưa hoàn tất"
+        elif cardcode in pending_cardcodes:
+            cardcode_status = "Suy nghĩ lại"
+
+        # * WITH BUTTON
+        def increase_cardcode():
+            if not st.session_state["customer_selector"]:
+                st.session_state["customer_selector"] = filtered_cardcodes[0]
+            else:
+                current_idx = filtered_cardcodes.index(st.session_state["customer_selector"])
+                if current_idx < len(filtered_cardcodes) - 1:
+                    st.session_state["customer_selector"] = filtered_cardcodes[current_idx+1]
+                else:
+                    st.session_state["customer_selector"] = filtered_cardcodes[0]
+
+        def decrease_cardcode():
+            if not st.session_state["customer_selector"]:
+                st.session_state["customer_selector"] = list(filtered_cardcodes)[0]
+            else:
+                current_idx = filtered_cardcodes.index(st.session_state["customer_selector"])
+                if current_idx > 0:
+                    st.session_state["customer_selector"] = filtered_cardcodes[current_idx-1]
+                else:
+                    st.session_state["customer_selector"] = filtered_cardcodes[-1]
+
+        next_btn_col.button("**NEXT**", key="btn_next", on_click=increase_cardcode)
+        st.write(
+            """
+            <style>
+            div.stButton > button:btn_next {
+                background-color: #d6d2d2
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+        back_btn_col.button(
+            "**PREVIOUS**", key="btn_previous", on_click=decrease_cardcode
+        )
+
+        # * OUTPUT & FORM
 
         # with col2:
         st.write(
@@ -325,7 +379,31 @@ def labelling_component():
             unsafe_allow_html=True,
         )
 
+        st.write(
+            """<style>
+            [data-testid="stForm"]{
+                border: none;
+                padding-left: unset;
+                padding-right: unset;
+            },
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
         with st.form("label_form", clear_on_submit=True):
+            col_form_1, col_form_2, col_form_3, col_form_4 = st.columns([2, 2, 2, 2])
+            # with col_form_1:
+            #     is_postponed = st.checkbox("Suy nghĩ lại")
+            col_form_1.metric("Mã khách hàng", value=cardcode)
+            col_form_2.metric("Trạng thái khách hàng", value=cardcode_status)
+            with col_form_3:
+                is_postponed = st.checkbox("Suy nghĩ lại")
+
+            with col_form_4:
+                submitted = st.form_submit_button(
+                    "**SAVE**", type="primary", use_container_width=True
+                )
+
             st.subheader("Output - Đánh giá theo KH")
             output_col_1, output_col_2 = st.columns(2)
 
@@ -360,227 +438,266 @@ def labelling_component():
                 )
                 grid_output_lv2 = aggrid_table(outputs_lv2, "Phản hồi nhóm bệnh")
 
-            col_form_1, col_form_2, col_form_3 = st.columns([2, 2, 4])
-            with col_form_1:
-                postponed = st.form_submit_button(
-                    "**PENDING**", type="secondary", use_container_width=True
-                )
-
-            with col_form_2:
-                submitted = st.form_submit_button(
-                    "**SAVE**", type="primary", use_container_width=True
-                )
-
             with col_form_3:
                 if submitted:
                     if cardcode is None:
                         st.warning("Hãy chọn 1 cardcode")
                     else:
-                        (
-                            specialties,
-                            specialty_responses,
-                        ) = grid_output_lv1.data.to_dict(orient="list").values()
-                        (
-                            disease_groups,
-                            disease_group_responses,
-                        ) = grid_output_lv2.data.to_dict(orient="list").values()
+                        if is_postponed:
+                            (
+                                specialties,
+                                specialty_responses,
+                            ) = grid_output_lv1.data.to_dict(orient="list").values()
+                            (
+                                disease_groups,
+                                disease_group_responses,
+                            ) = grid_output_lv2.data.to_dict(orient="list").values()
+                            lv1_disagree_index = [
+                                item["_selectedRowNodeInfo"]["nodeRowIndex"]
+                                for item in grid_output_lv1["selected_rows"]
+                            ]
+                            lv2_disagree_index = [
+                                item["_selectedRowNodeInfo"]["nodeRowIndex"]
+                                for item in grid_output_lv2["selected_rows"]
+                            ]
 
-                        lv1_disagree_index = [
-                            item["_selectedRowNodeInfo"]["nodeRowIndex"]
-                            for item in grid_output_lv1["selected_rows"]
-                        ]
-                        lv2_disagree_index = [
-                            item["_selectedRowNodeInfo"]["nodeRowIndex"]
-                            for item in grid_output_lv2["selected_rows"]
-                        ]
+                            df_pending = pd.DataFrame(
+                                {
+                                    "specialties": specialties,
+                                    "specialty_responses": specialty_responses,
+                                    "disease_groups": disease_groups,
+                                    "disease_group_responses": disease_group_responses,
+                                }
+                            )
+                            df_pending["CardCode"] = cardcode
+                            df_pending["specialty_labels"] = False
+                            df_pending["disease_group_labels"] = False
 
-                        df_submit = pd.DataFrame(
-                            {
-                                "specialties": specialties,
-                                "specialty_responses": specialty_responses,
-                                "disease_groups": disease_groups,
-                                "disease_group_responses": disease_group_responses,
-                            }
-                        )
-                        df_submit["CardCode"] = cardcode
-                        df_submit["specialty_labels"] = False
-                        df_submit["disease_group_labels"] = False
+                            df_pending.loc[
+                                lv1_disagree_index, "specialty_labels"
+                            ] = True
+                            df_pending.loc[
+                                lv2_disagree_index, "disease_group_labels"
+                            ] = True
 
-                        df_submit.loc[lv1_disagree_index, "specialty_labels"] = True
-                        df_submit.loc[lv2_disagree_index, "disease_group_labels"] = True
-
-                        if (
-                            df_submit.loc[lv1_disagree_index, "specialty_responses"]
-                            == "None"
-                        ).sum() != 0 or (
-                            df_submit.loc[lv2_disagree_index, "disease_group_labels"]
-                            == "None"
-                        ).sum() != 0:
-                            st.warning("Mỗi ô không đồng ý phải có bình luận tương ứng")
-                        else:
-                            if cardcode not in label_df["CardCode"]:
-                                label_df = pd.concat(
-                                    [df_submit, label_df], ignore_index=True
+                            if cardcode not in pending_cardcodes:
+                                postponed_df = pd.concat(
+                                    [df_pending, postponed_df], ignore_index=True
                                 )
                             else:
-                                label_df = label_df[label_df["CardCode"] != cardcode]
-                                label_df = pd.concat(
-                                    [df_submit, label_df], ignore_index=True
+                                postponed_df = postponed_df[
+                                    postponed_df["CardCode"] != cardcode
+                                ]
+                                postponed_df = pd.concat(
+                                    [df_pending, postponed_df], ignore_index=True
                                 )
 
-                            with st.spinner("Saving data..."):
-                                label_df.to_csv(
-                                    LOCAL_LABEL_PATH.format(labeller_username),
+                            with st.spinner("Saving postponed data...", cache=True):
+                                postponed_df.to_csv(
+                                    LOCAL_PENDING_CUSTOMER_PATH.format(
+                                        labeller_username
+                                    ),
                                     index=False,
                                 )
                                 save_data_gcs(
-                                    LOCAL_LABEL_PATH.format(labeller_username),
-                                    LABEL_PATH.format(labeller_username),
+                                    LOCAL_PENDING_CUSTOMER_PATH.format(
+                                        labeller_username
+                                    ),
+                                    PENDING_CUSTOMER_PATH.format(labeller_username),
                                     conn=conn,
                                 )
-                                if cardcode in pending_cardcodes:
+                                if cardcode in labelled_cardcodes:
                                     # Remove from pending list
-                                    postponed_df = postponed_df[
-                                        postponed_df["CardCode"] != cardcode
+                                    label_df = label_df[
+                                        label_df["CardCode"] != cardcode
                                     ]
                                     with st.spinner("Saving postponed data..."):
-                                        postponed_df.to_csv(
-                                            LOCAL_PENDING_CUSTOMER_PATH.format(
+                                        label_df.to_csv(
+                                            LOCAL_LABEL_PATH.format(
                                                 labeller_username
                                             ),
                                             index=False,
                                         )
                                         save_data_gcs(
-                                            LOCAL_PENDING_CUSTOMER_PATH.format(
+                                            LOCAL_LABEL_PATH.format(
                                                 labeller_username
                                             ),
-                                            PENDING_CUSTOMER_PATH.format(
+                                            LABEL_PATH.format(
                                                 labeller_username
                                             ),
                                             conn=conn,
                                         )
-                                        st.session_state["n_pending_cardcodes"] -= 1
+                                        st.session_state["n_labeled_cardcodes"] -= 1
 
                                 st.session_state["n_unlabeled_cardcodes"] -= 1
-                                st.session_state["n_labeled_cardcodes"] += 1
-                                st.rerun()
-                elif postponed:
-                    if cardcode is None:
-                        st.warning("Hãy chọn 1 cardcode")
-                    else:
-                        (
-                            specialties,
-                            specialty_responses,
-                        ) = grid_output_lv1.data.to_dict(orient="list").values()
-                        (
-                            disease_groups,
-                            disease_group_responses,
-                        ) = grid_output_lv2.data.to_dict(orient="list").values()
-                        lv1_disagree_index = [
-                            item["_selectedRowNodeInfo"]["nodeRowIndex"]
-                            for item in grid_output_lv1["selected_rows"]
-                        ]
-                        lv2_disagree_index = [
-                            item["_selectedRowNodeInfo"]["nodeRowIndex"]
-                            for item in grid_output_lv2["selected_rows"]
-                        ]
-
-                        df_pending = pd.DataFrame(
-                            {
-                                "specialties": specialties,
-                                "specialty_responses": specialty_responses,
-                                "disease_groups": disease_groups,
-                                "disease_group_responses": disease_group_responses,
-                            }
-                        )
-                        df_pending["CardCode"] = cardcode
-                        df_pending["specialty_labels"] = False
-                        df_pending["disease_group_labels"] = False
-
-                        df_pending.loc[lv1_disagree_index, "specialty_labels"] = True
-                        df_pending.loc[
-                            lv2_disagree_index, "disease_group_labels"
-                        ] = True
-
-                        if cardcode not in pending_cardcodes:
-                            postponed_df = pd.concat(
-                                [df_pending, postponed_df], ignore_index=True
-                            )
+                                st.session_state["n_pending_cardcodes"] += 1
                         else:
-                            postponed_df = postponed_df[
-                                postponed_df["CardCode"] != cardcode
+                            (
+                                specialties,
+                                specialty_responses,
+                            ) = grid_output_lv1.data.to_dict(orient="list").values()
+                            (
+                                disease_groups,
+                                disease_group_responses,
+                            ) = grid_output_lv2.data.to_dict(orient="list").values()
+
+                            lv1_disagree_index = [
+                                item["_selectedRowNodeInfo"]["nodeRowIndex"]
+                                for item in grid_output_lv1["selected_rows"]
                             ]
-                            postponed_df = pd.concat(
-                                [df_pending, postponed_df], ignore_index=True
+                            lv2_disagree_index = [
+                                item["_selectedRowNodeInfo"]["nodeRowIndex"]
+                                for item in grid_output_lv2["selected_rows"]
+                            ]
+
+                            df_submit = pd.DataFrame(
+                                {
+                                    "specialties": specialties,
+                                    "specialty_responses": specialty_responses,
+                                    "disease_groups": disease_groups,
+                                    "disease_group_responses": disease_group_responses,
+                                }
                             )
+                            df_submit["CardCode"] = cardcode
+                            df_submit["specialty_labels"] = False
+                            df_submit["disease_group_labels"] = False
 
-                        with st.spinner("Saving postponed data...", cache=True):
-                            postponed_df.to_csv(
-                                LOCAL_PENDING_CUSTOMER_PATH.format(labeller_username),
-                                index=False,
-                            )
-                            save_data_gcs(
-                                LOCAL_PENDING_CUSTOMER_PATH.format(labeller_username),
-                                PENDING_CUSTOMER_PATH.format(labeller_username),
-                                conn=conn,
-                            )
-                            st.session_state["n_unlabeled_cardcodes"] -= 1
-                            st.session_state["n_pending_cardcodes"] += 1
+                            df_submit.loc[lv1_disagree_index, "specialty_labels"] = True
+                            df_submit.loc[
+                                lv2_disagree_index, "disease_group_labels"
+                            ] = True
 
-        st.subheader("Danh sách KH đã dán nhãn")
-        try:
-            with st.spinner("Loading label data..."):
-                # get_data_gcs(
-                #     LABEL_PATH.format(labeller_username),
-                #     LOCAL_LABEL_PATH.format(labeller_username),
-                #     conn,
-                # )
-                label_df = pd.read_csv(LOCAL_LABEL_PATH.format(labeller_username))[
-                    ["CardCode"]
-                ]
-        except:
-            label_df = pd.DataFrame(
-                columns=[
-                    "CardCode",
-                ]
-            )
+                            if (
+                                df_submit.loc[lv1_disagree_index, "specialty_responses"]
+                                == "None"
+                            ).sum() != 0 or (
+                                df_submit.loc[
+                                    lv2_disagree_index, "disease_group_labels"
+                                ]
+                                == "None"
+                            ).sum() != 0:
+                                st.warning(
+                                    "Mỗi ô không đồng ý phải có bình luận tương ứng"
+                                )
+                            else:
+                                if cardcode not in label_df["CardCode"]:
+                                    label_df = pd.concat(
+                                        [df_submit, label_df], ignore_index=True
+                                    )
+                                else:
+                                    label_df = label_df[
+                                        label_df["CardCode"] != cardcode
+                                    ]
+                                    label_df = pd.concat(
+                                        [df_submit, label_df], ignore_index=True
+                                    )
 
-        label_df["status"] = "COMPLETE"
-        label_df = label_df.drop_duplicates(subset=["CardCode"])
+                                with st.spinner("Saving data..."):
+                                    label_df.to_csv(
+                                        LOCAL_LABEL_PATH.format(labeller_username),
+                                        index=False,
+                                    )
+                                    save_data_gcs(
+                                        LOCAL_LABEL_PATH.format(labeller_username),
+                                        LABEL_PATH.format(labeller_username),
+                                        conn=conn,
+                                    )
+                                    if cardcode in pending_cardcodes:
+                                        # Remove from pending list
+                                        postponed_df = postponed_df[
+                                            postponed_df["CardCode"] != cardcode
+                                        ]
+                                        with st.spinner("Saving postponed data..."):
+                                            postponed_df.to_csv(
+                                                LOCAL_PENDING_CUSTOMER_PATH.format(
+                                                    labeller_username
+                                                ),
+                                                index=False,
+                                            )
+                                            save_data_gcs(
+                                                LOCAL_PENDING_CUSTOMER_PATH.format(
+                                                    labeller_username
+                                                ),
+                                                PENDING_CUSTOMER_PATH.format(
+                                                    labeller_username
+                                                ),
+                                                conn=conn,
+                                            )
+                                            st.session_state["n_pending_cardcodes"] -= 1
 
-        try:
-            with st.spinner("Loading pending data..."):
-                # get_data_gcs(
-                #     PENDING_CUSTOMER_PATH.format(labeller_username),
-                #     LOCAL_PENDING_CUSTOMER_PATH.form(labeller_username),
-                #     conn,
-                # )
-                postponed_df = pd.read_csv(
-                    LOCAL_PENDING_CUSTOMER_PATH.format(labeller_username)
-                )[["CardCode"]]
-        except:
-            postponed_df = pd.DataFrame(
-                columns=[
-                    "CardCode",
-                ]
-            )
-        postponed_df["status"] = "PENDING"
-        postponed_df = postponed_df.drop_duplicates(subset=["CardCode"])
+                                    st.session_state["n_unlabeled_cardcodes"] -= 1
+                                    st.session_state["n_labeled_cardcodes"] += 1
+                        st.rerun()
+        # with col1:
+        show_input_cols = ["date", "item_name", "ingredients", "unitname"]
+        trans_df: pd.DataFrame = trans_df[trans_df["customer_id"] == cardcode]
+        # print(outputs_df[outputs_df["importance_level"] == "Cao"])
+        st.subheader(
+            f"Input - Chi tiết đơn hàng theo ngày ( :blue[{trans_df['bill_id'].nunique()} đơn hàng])"
+        )
 
-        all_label_df = pd.concat(
-            [label_df, postponed_df], ignore_index=True
-        ).sort_values(by=["status", "CardCode"], ascending=[False, True])
+        trans_df = trans_df[show_input_cols]
 
         st.dataframe(
-            all_label_df.rename(columns={"CardCode": "Mã khách hàng"}),
-            use_container_width=False,
+            trans_df.rename(
+                columns={
+                    "date": "Ngày mua",
+                    "item_name": "Tên thuốc",
+                    "ingredients": "Hoạt chất",
+                    "unitname": "Đơn vị",
+                }
+            ).style.apply(format_color_groups, axis=None),
             hide_index=True,
+            use_container_width=True,
+            height=300,
         )
-        # selected = grid_clickable(
-        #     all_label_df.rename(columns={"CardCode": "Mã khách hàng"})
+
+        # st.subheader("Danh sách KH đã dán nhãn")
+        # try:
+        #     with st.spinner("Loading label data..."):
+        #         # get_data_gcs(
+        #         #     LABEL_PATH.format(labeller_username),
+        #         #     LOCAL_LABEL_PATH.format(labeller_username),
+        #         #     conn,
+        #         # )
+        #         label_df = pd.read_csv(LOCAL_LABEL_PATH.format(labeller_username))[
+        #             ["CardCode"]
+        #         ]
+        # except:
+        #     label_df = pd.DataFrame(
+        #         columns=[
+        #             "CardCode",
+        #         ]
+        #     )
+
+        # label_df["status"] = "COMPLETE"
+        # label_df = label_df.drop_duplicates(subset=["CardCode"])
+
+        # try:
+        #     with st.spinner("Loading pending data..."):
+        #         # get_data_gcs(
+        #         #     PENDING_CUSTOMER_PATH.format(labeller_username),
+        #         #     LOCAL_PENDING_CUSTOMER_PATH.form(labeller_username),
+        #         #     conn,
+        #         # )
+        #         postponed_df = pd.read_csv(
+        #             LOCAL_PENDING_CUSTOMER_PATH.format(labeller_username)
+        #         )[["CardCode"]]
+        # except:
+        #     postponed_df = pd.DataFrame(
+        #         columns=[
+        #             "CardCode",
+        #         ]
+        #     )
+        # postponed_df["status"] = "PENDING"
+        # postponed_df = postponed_df.drop_duplicates(subset=["CardCode"])
+
+        # all_label_df = pd.concat(
+        #     [label_df, postponed_df], ignore_index=True
+        # ).sort_values(by=["status", "CardCode"], ascending=[False, True])
+
+        # st.dataframe(
+        #     all_label_df.rename(columns={"CardCode": "Mã khách hàng"}),
+        #     use_container_width=False,
+        #     hide_index=True,
         # )
-        # if len(selected["selected_rows"]) != 0:
-        #     st.session_state["customer_pending_selector"] = selected["selected_rows"][
-        #         0
-        #     ]["Mã khách hàng"]
-        #     st.stop()
