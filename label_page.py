@@ -221,7 +221,7 @@ def labelling_component():
         )
         style_metric_cards(border_radius_px=10)
         change_metric_color(f'{st.session_state["n_labeled_cardcodes"]:,}', "#92C580")
-        change_metric_color(f'{st.session_state["n_pending_cardcodes"]:,}', "#5b5b5b")
+        change_metric_color(f'{st.session_state["n_pending_cardcodes"]:,}', "#949494")
         change_metric_color(f'{st.session_state["n_unlabeled_cardcodes"]:,}', "#F9B064")
 
         st.write(
