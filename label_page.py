@@ -85,9 +85,11 @@ def color_importance(series: pd.Series):
     return series.apply(lambda x: f"background-color: {IMPORTANCE_COLOR_CODES[x]}")
 
 
-def aggrid_table(df: pd.DataFrame, edit_col, pre_selected = None):
+def aggrid_table(df: pd.DataFrame, edit_col, pre_selected=None):
     gd = GridOptionsBuilder.from_dataframe(df)
-    gd.configure_selection(selection_mode="multiple", use_checkbox=True, pre_selected_rows=pre_selected)
+    gd.configure_selection(
+        selection_mode="multiple", use_checkbox=True, pre_selected_rows=pre_selected
+    )
     gd.configure_columns(edit_col, editable=True)
     grid_options = gd.build()
     grid_options["defaultColDef"]["wrapText"] = True
@@ -211,7 +213,8 @@ def labelling_component():
         st.session_state["n_labeled_cardcodes"] = len(total_cardcodes) - len(cardcodes)
         st.session_state["n_pending_cardcodes"] = len(pending_cardcodes)
         col_status_unlabeled.metric(
-            label="Chưa hoàn tất", value=f'{st.session_state["n_unlabeled_cardcodes"]:,}'
+            label="Chưa hoàn tất",
+            value=f'{st.session_state["n_unlabeled_cardcodes"]:,}',
         )
         col_status_labeled.metric(
             label="Hoàn tất", value=f'{st.session_state["n_labeled_cardcodes"]:,}'
@@ -301,9 +304,13 @@ def labelling_component():
                 if not st.session_state["customer_selector"]:
                     st.session_state["customer_selector"] = filtered_cardcodes[0]
                 else:
-                    current_idx = filtered_cardcodes.index(st.session_state["customer_selector"])
+                    current_idx = filtered_cardcodes.index(
+                        st.session_state["customer_selector"]
+                    )
                     if current_idx < len(filtered_cardcodes) - 1:
-                        st.session_state["customer_selector"] = filtered_cardcodes[current_idx+1]
+                        st.session_state["customer_selector"] = filtered_cardcodes[
+                            current_idx + 1
+                        ]
                     else:
                         st.session_state["customer_selector"] = filtered_cardcodes[0]
 
@@ -314,9 +321,13 @@ def labelling_component():
                 if not st.session_state["customer_selector"]:
                     st.session_state["customer_selector"] = list(filtered_cardcodes)[0]
                 else:
-                    current_idx = filtered_cardcodes.index(st.session_state["customer_selector"])
+                    current_idx = filtered_cardcodes.index(
+                        st.session_state["customer_selector"]
+                    )
                     if current_idx > 0:
-                        st.session_state["customer_selector"] = filtered_cardcodes[current_idx-1]
+                        st.session_state["customer_selector"] = filtered_cardcodes[
+                            current_idx - 1
+                        ]
                     else:
                         st.session_state["customer_selector"] = filtered_cardcodes[-1]
 
@@ -329,7 +340,7 @@ def labelling_component():
             }
             </style>
             """,
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
         back_btn_col.button(
             "**PREVIOUS**", key="btn_previous", on_click=decrease_cardcode
@@ -417,21 +428,29 @@ def labelling_component():
             pre_selected_disease_groups = None
 
             if cardcode in labelled_cardcodes:
-                outputs_df: pd.DataFrame = label_df[
-                    label_df["CardCode"] == cardcode
-                ]
+                outputs_df: pd.DataFrame = label_df[label_df["CardCode"] == cardcode]
 
-                pre_selected_specialties = outputs_df[outputs_df["specialty_labels"]].index.to_list()
-                pre_selected_disease_groups = outputs_df[outputs_df["disease_group_labels"]].index.to_list()
+                pre_selected_specialties = outputs_df[
+                    outputs_df["specialty_labels"]
+                ].index.to_list()
+                pre_selected_disease_groups = outputs_df[
+                    outputs_df["disease_group_labels"]
+                ].index.to_list()
 
-                outputs_lv1 = outputs_df[["specialties", "specialty_responses"]].rename(columns={
-                    "specialties": "lv1_name",
-                    "specialty_responses": "response"
-                })
-                outputs_lv2 = outputs_df[["disease_groups", "disease_group_responses"]].rename(columns={
-                    "disease_groups": "lv2_name",
-                    "disease_group_responses": "response"
-                })
+                outputs_lv1 = outputs_df[["specialties", "specialty_responses"]].rename(
+                    columns={
+                        "specialties": "lv1_name",
+                        "specialty_responses": "response",
+                    }
+                )
+                outputs_lv2 = outputs_df[
+                    ["disease_groups", "disease_group_responses"]
+                ].rename(
+                    columns={
+                        "disease_groups": "lv2_name",
+                        "disease_group_responses": "response",
+                    }
+                )
             else:
                 outputs_df: pd.DataFrame = outputs_df[
                     outputs_df["customer_id"] == cardcode
@@ -453,7 +472,11 @@ def labelling_component():
                         "response": "Phản hồi chuyên khoa",
                     }
                 )
-                grid_output_lv1 = aggrid_table(outputs_lv1, "Phản hồi chuyên khoa", pre_selected=pre_selected_specialties)
+                grid_output_lv1 = aggrid_table(
+                    outputs_lv1,
+                    "Phản hồi chuyên khoa",
+                    pre_selected=pre_selected_specialties,
+                )
 
             with output_col_2:
                 outputs_lv2 = outputs_lv2.rename(
@@ -462,7 +485,11 @@ def labelling_component():
                         "response": "Phản hồi nhóm bệnh",
                     }
                 )
-                grid_output_lv2 = aggrid_table(outputs_lv2, "Phản hồi nhóm bệnh", pre_selected=pre_selected_disease_groups)
+                grid_output_lv2 = aggrid_table(
+                    outputs_lv2,
+                    "Phản hồi nhóm bệnh",
+                    pre_selected=pre_selected_disease_groups,
+                )
 
             with col_form_3:
                 if submitted:
@@ -539,18 +566,12 @@ def labelling_component():
                                     ]
                                     with st.spinner("Saving postponed data..."):
                                         label_df.to_csv(
-                                            LOCAL_LABEL_PATH.format(
-                                                labeller_username
-                                            ),
+                                            LOCAL_LABEL_PATH.format(labeller_username),
                                             index=False,
                                         )
                                         save_data_gcs(
-                                            LOCAL_LABEL_PATH.format(
-                                                labeller_username
-                                            ),
-                                            LABEL_PATH.format(
-                                                labeller_username
-                                            ),
+                                            LOCAL_LABEL_PATH.format(labeller_username),
+                                            LABEL_PATH.format(labeller_username),
                                             conn=conn,
                                         )
                                         st.session_state["n_labeled_cardcodes"] -= 1
@@ -587,6 +608,17 @@ def labelling_component():
                             df_submit["CardCode"] = cardcode
                             df_submit["specialty_labels"] = False
                             df_submit["disease_group_labels"] = False
+                            trash_dict = {
+                                "None": None,
+                                "NaN": None,
+                                "none": None,
+                            }
+                            df_submit["specialty_responses"].replace(
+                                trash_dict, inplace=True
+                            )
+                            df_submit["disease_group_responses"].replace(
+                                trash_dict, inplace=True
+                            )
 
                             df_submit.loc[lv1_disagree_index, "specialty_labels"] = True
                             df_submit.loc[
