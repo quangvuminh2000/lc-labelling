@@ -87,8 +87,14 @@ def color_importance(series: pd.Series):
 
 def aggrid_table(df: pd.DataFrame, edit_col, pre_selected=None):
     gd = GridOptionsBuilder.from_dataframe(df)
+    pre_selected_dict = {}
+    if pre_selected is not None:
+        pre_selected_dict = dict(zip(pre_selected, range(len(pre_selected))))
     gd.configure_selection(
-        selection_mode="multiple", use_checkbox=True, pre_selected_rows=pre_selected
+        selection_mode="multiple",
+        use_checkbox=True,
+        pre_selected_rows=pre_selected_dict,
+        groupSelectsFiltered=False,
     )
     gd.configure_columns(edit_col, editable=True)
     grid_options = gd.build()
