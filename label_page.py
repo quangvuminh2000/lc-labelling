@@ -611,8 +611,6 @@ def labelling_component(authenticator):
                                 disease_groups,
                                 disease_group_responses,
                             ) = grid_output_lv2.data.to_dict(orient="list").values()
-                            print(grid_output_lv1)
-                            print(grid_output_lv2)
 
                             lv1_disagree_index = [
                                 item["_selectedRowNodeInfo"]["nodeRowIndex"]
