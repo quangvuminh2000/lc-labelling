@@ -269,7 +269,7 @@ def authentication_component():
     # * LOGIN SUCCESSFULLY
     if st.session_state["authentication_status"]:
         st.sidebar.write(f"Welcome **{st.session_state['name']}**")
-        authenticator.logout("Logout", "sidebar", key="logout_btn")
+        # authenticator.logout("Logout", "sidebar", key="logout_btn")
         # auth_page_names_to_funcs = {
         #     "Reset Password": reset_password_form,
         #     "Update User Details": update_user_details,
@@ -287,6 +287,7 @@ def authentication_component():
 
         # if auth_page:
         #     auth_page_names_to_funcs[auth_page](authenticator)
+    return authenticator
 
 
 if __name__ == "__main__":

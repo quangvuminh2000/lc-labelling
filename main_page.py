@@ -10,9 +10,9 @@ from auth import authentication_component
 from label_page import labelling_component
 
 if __name__ == "__main__":
-    authentication_component()
+    authenticator = authentication_component()
 
-    labelling_component()
+    labelling_component(authenticator)
 
     st.markdown(
         """

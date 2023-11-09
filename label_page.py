@@ -87,8 +87,14 @@ def color_importance(series: pd.Series):
 
 def aggrid_table(df: pd.DataFrame, edit_col, pre_selected=None):
     gd = GridOptionsBuilder.from_dataframe(df)
+    pre_selected_dict = {}
+    if pre_selected is not None:
+        pre_selected_dict = dict(zip(pre_selected, range(len(pre_selected))))
     gd.configure_selection(
-        selection_mode="multiple", use_checkbox=True, pre_selected_rows=pre_selected
+        selection_mode="multiple",
+        use_checkbox=True,
+        pre_selected_rows=pre_selected_dict,
+        groupSelectsFiltered=False,
     )
     gd.configure_columns(edit_col, editable=True)
     grid_options = gd.build()
@@ -140,11 +146,12 @@ def change_metric_color(wgt_txt, wch_color="#000000"):
     components.html(f"{html_str}", height=0, width=0)
 
 
-def labelling_component():
+def labelling_component(authenticator):
     if not st.session_state.to_dict().get("authentication_status", None):
         pass
     else:
         labeller_username = st.session_state["username"]
+        st.header("Thống kê tiến độ")
         (
             col_status_labeled,
             col_status_pending,
@@ -271,8 +278,6 @@ def labelling_component():
             if "Chưa hoàn tất" in customer_status:
                 filtered_cardcodes.update(unlabeled_cardcodes)
 
-        _, back_btn_col, next_btn_col, _ = st.columns([2, 1, 1, 2])
-
         st.write(
             """<style>
             [data-testid="baseButton-secondary"] {
@@ -288,6 +293,7 @@ def labelling_component():
         cardcode = select_customer(filtered_cardcodes)
         # print(cardcode)
 
+        back_btn_col, next_btn_col = st.sidebar.columns([1, 1])
         cardcode_status = None
         if cardcode in labelled_cardcodes:
             cardcode_status = "Hoàn tất"
@@ -332,16 +338,6 @@ def labelling_component():
                         st.session_state["customer_selector"] = filtered_cardcodes[-1]
 
         next_btn_col.button("**NEXT**", key="btn_next", on_click=increase_cardcode)
-        st.write(
-            """
-            <style>
-            div.stButton > button:btn_next {
-                background-color: #d6d2d2
-            }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
         back_btn_col.button(
             "**PREVIOUS**", key="btn_previous", on_click=decrease_cardcode
         )
@@ -408,27 +404,29 @@ def labelling_component():
             unsafe_allow_html=True,
         )
         with st.form("label_form", clear_on_submit=True):
-            col_form_1, col_form_2, col_form_3, col_form_4 = st.columns([2, 2, 2, 2])
+            col_form_1, _, col_form_2, col_form_3 = st.columns([4, 1, 1, 1])
             # with col_form_1:
             #     is_postponed = st.checkbox("Suy nghĩ lại")
-            col_form_1.metric("Mã khách hàng", value=cardcode)
-            col_form_2.metric("Trạng thái khách hàng", value=cardcode_status)
-            with col_form_3:
+            col_form_1.write(f"MÃ KHÁCH HÀNG: **{cardcode}**")
+            col_form_1.write(f"TRẠNG THÁI KHÁCH HÀNG: **{cardcode_status}**")
+            with col_form_2:
                 is_postponed = st.checkbox("Suy nghĩ lại")
 
-            with col_form_4:
+            with col_form_3:
                 submitted = st.form_submit_button(
                     "**SAVE**", type="primary", use_container_width=True
                 )
 
-            st.subheader("Output - Đánh giá theo KH")
+            st.header("Kết luận (output)")
             output_col_1, output_col_2 = st.columns(2)
 
             pre_selected_specialties = None
             pre_selected_disease_groups = None
 
             if cardcode in labelled_cardcodes:
-                outputs_df: pd.DataFrame = label_df[label_df["CardCode"] == cardcode]
+                outputs_df: pd.DataFrame = label_df[
+                    label_df["CardCode"] == cardcode
+                ].reset_index(drop=True)
 
                 pre_selected_specialties = outputs_df[
                     outputs_df["specialty_labels"]
@@ -452,7 +450,9 @@ def labelling_component():
                     }
                 )
             elif cardcode in pending_cardcodes:
-                outputs_df: pd.DataFrame = postponed_df[postponed_df["CardCode"] == cardcode]
+                outputs_df: pd.DataFrame = postponed_df[
+                    postponed_df["CardCode"] == cardcode
+                ].reset_index(drop=True)
 
                 pre_selected_specialties = outputs_df[
                     outputs_df["specialty_labels"]
@@ -515,7 +515,7 @@ def labelling_component():
                     pre_selected=pre_selected_disease_groups,
                 )
 
-            with col_form_3:
+            with col_form_2:
                 if submitted:
                     if cardcode is None:
                         st.warning("Hãy chọn 1 cardcode")
@@ -611,6 +611,8 @@ def labelling_component():
                                 disease_groups,
                                 disease_group_responses,
                             ) = grid_output_lv2.data.to_dict(orient="list").values()
+                            print(grid_output_lv1)
+                            print(grid_output_lv2)
 
                             lv1_disagree_index = [
                                 item["_selectedRowNodeInfo"]["nodeRowIndex"]
@@ -714,9 +716,7 @@ def labelling_component():
         show_input_cols = ["date", "item_name", "ingredients", "unitname"]
         trans_df: pd.DataFrame = trans_df[trans_df["customer_id"] == cardcode]
         # print(outputs_df[outputs_df["importance_level"] == "Cao"])
-        st.subheader(
-            f"Input - Chi tiết đơn hàng theo ngày ( :blue[{trans_df['bill_id'].nunique()} đơn hàng])"
-        )
+        st.header(f"Chi tiết :blue[{trans_df['bill_id'].nunique()} đơn hàng] (input)")
 
         trans_df = trans_df[show_input_cols]
 
@@ -733,6 +733,8 @@ def labelling_component():
             use_container_width=True,
             height=300,
         )
+
+        authenticator.logout("Logout", "sidebar", key="logout_btn")
 
         # st.subheader("Danh sách KH đã dán nhãn")
         # try:
