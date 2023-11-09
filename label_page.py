@@ -571,14 +571,14 @@ def labelling_component(authenticator):
                             if cardcode not in pending_cardcodes:
                                 postponed_df = pd.concat(
                                     [df_pending, postponed_df], ignore_index=True
-                                )
+                                ).drop_duplicates(ignore_index=True)
                             else:
                                 postponed_df = postponed_df[
                                     postponed_df["CardCode"] != cardcode
                                 ]
                                 postponed_df = pd.concat(
                                     [df_pending, postponed_df], ignore_index=True
-                                )
+                                ).drop_duplicates(ignore_index=True)
 
                             with st.spinner("Saving postponed data...", cache=True):
                                 postponed_df.to_csv(
@@ -677,17 +677,17 @@ def labelling_component(authenticator):
                                     "Mỗi ô không đồng ý phải có bình luận tương ứng"
                                 )
                             else:
-                                if cardcode not in label_df["CardCode"]:
+                                if cardcode not in labelled_cardcodes:
                                     label_df = pd.concat(
                                         [df_submit, label_df], ignore_index=True
-                                    )
+                                    ).drop_duplicates(ignore_index=True)
                                 else:
                                     label_df = label_df[
                                         label_df["CardCode"] != cardcode
                                     ]
                                     label_df = pd.concat(
                                         [df_submit, label_df], ignore_index=True
-                                    )
+                                    ).drop_duplicates(ignore_index=True)
 
                                 with st.spinner("Saving data..."):
                                     label_df.to_csv(
