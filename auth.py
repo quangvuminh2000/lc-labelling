@@ -21,9 +21,7 @@ CONFIG_DATA_PATH_GCS = "lc_labelling_bucket/auth/auth.csv"
 CONFIG_PATH_LOCAL = "./config/auth.yaml"
 CONFIG_PATH_GCS = "lc_labelling_bucket/auth/auth.yaml"
 
-st.cache_resource
-
-
+@st.cache_data
 def get_config_gcs():
     conn = st.connection("gcs", type=FilesConnection)
     get_data_gcs(CONFIG_PATH_GCS, CONFIG_PATH_LOCAL, conn)
