@@ -549,6 +549,17 @@ def labelling_component(authenticator):
                             df_pending["CardCode"] = cardcode
                             df_pending["specialty_labels"] = False
                             df_pending["disease_group_labels"] = False
+                            trash_dict = {
+                                "None": None,
+                                "NaN": None,
+                                "none": None,
+                            }
+                            df_pending["specialty_responses"].replace(
+                                trash_dict, inplace=True
+                            )
+                            df_pending["disease_group_responses"].replace(
+                                trash_dict, inplace=True
+                            )
 
                             df_pending.loc[
                                 lv1_disagree_index, "specialty_labels"
@@ -651,13 +662,17 @@ def labelling_component(authenticator):
 
                             if (
                                 df_submit.loc[lv1_disagree_index, "specialty_responses"]
-                                == "None"
-                            ).sum() != 0 or (
+                                .isna()
+                                .sum()
+                                != 0
+                            ) or (
                                 df_submit.loc[
                                     lv2_disagree_index, "disease_group_labels"
                                 ]
-                                == "None"
-                            ).sum() != 0:
+                                .isna()
+                                .sum()
+                                != 0
+                            ):
                                 st.warning(
                                     "Mỗi ô không đồng ý phải có bình luận tương ứng"
                                 )
