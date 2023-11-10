@@ -97,6 +97,10 @@ def aggrid_table(df: pd.DataFrame, edit_col, pre_selected=None):
         groupSelectsFiltered=False,
     )
     gd.configure_columns(edit_col, editable=True)
+    gd.configure_auto_height(False)
+    gd.configure_grid_options(rowStyle={
+        'lineHeight': '0px'
+    })
     grid_options = gd.build()
     grid_options["defaultColDef"]["wrapText"] = True
     grid_options["defaultColDef"]["autoHeight"] = True
@@ -109,6 +113,7 @@ def aggrid_table(df: pd.DataFrame, edit_col, pre_selected=None):
         columns_auto_size_mode=ColumnsAutoSizeMode.FIT_ALL_COLUMNS_TO_VIEW,
         allow_unsafe_jscode=True,
         enable_enterprise_modules=False,
+        height=250,
     )
 
     return outputs_grid
@@ -130,33 +135,17 @@ def grid_clickable(df: pd.DataFrame):
     return selection
 
 
-def change_metric_color(wgt_txt, wch_color="#000000"):
-    html_str = (
-        """
-        <script>
-            var elements = window.parent.document.querySelectorAll('*'), i;
-            for (i = 0; i < elements.length; ++i) { if (elements[i].innerText == |wgt_txt|) elements[i].style.color = '"""
-        + wch_color
-        + """'; }
-        </script>
-        """
-    )
-
-    html_str = html_str.replace("|wgt_txt|", "'" + wgt_txt + "'")
-    components.html(f"{html_str}", height=0, width=0)
-
-
 def labelling_component(authenticator):
     if not st.session_state.to_dict().get("authentication_status", None):
         pass
     else:
         labeller_username = st.session_state["username"]
-        st.header("Thống kê tiến độ")
         (
+            _,
             col_status_labeled,
             col_status_pending,
             col_status_unlabeled,
-        ) = st.columns([1, 1, 1])
+        ) = st.empty().columns([4, 1, 1, 1])
         conn = st.connection("gcs", type=FilesConnection)
 
         # ? Static data
@@ -230,9 +219,26 @@ def labelling_component(authenticator):
             label="Suy nghĩ lại", value=f'{st.session_state["n_pending_cardcodes"]:,}'
         )
         style_metric_cards(border_radius_px=10)
-        change_metric_color(f'{st.session_state["n_labeled_cardcodes"]:,}', "#92C580")
-        change_metric_color(f'{st.session_state["n_pending_cardcodes"]:,}', "#949494")
-        change_metric_color(f'{st.session_state["n_unlabeled_cardcodes"]:,}', "#F9B064")
+        st.write(
+            """
+            <style>
+                body > div#root:nth-child(2) > div:nth-child(1) > div.withScreencast:nth-child(1) > div > div.stApp.stAppEmbeddingId-s3wfzjqwcokm.streamlit-wide.st-emotion-cache-fg4pbf.erw9t6i1 > div.appview-container.st-emotion-cache-1wrcr25.ea3mdgi6:nth-child(2) > section.main.st-emotion-cache-uf99v8.ea3mdgi5:nth-child(2) > div.block-container.st-emotion-cache-z5fcl4.ea3mdgi4:nth-child(1) > div.st-emotion-cache-1wmy9hl.e1f1d6gn0 > div.st-emotion-cache-1y9ui5k.e1f1d6gn1 > div.st-emotion-cache-ocqkz7.e1f1d6gn4:nth-child(5) > div.st-emotion-cache-1b2d4l5.e1f1d6gn2:nth-child(2) > div.st-emotion-cache-1wmy9hl.e1f1d6gn0 > div.st-emotion-cache-1jiq91t.e1f1d6gn1 > div.element-container.st-emotion-cache-a8lcau.e1f1d6gn3 > div > div.st-emotion-cache-1xarl3l.e1i5pmia1:nth-child(2) > div.st-emotion-cache-1wivap2.e1i5pmia3 {
+                    color:#92C580
+                }
+            </style>
+            <style>
+                body > div#root:nth-child(2) > div:nth-child(1) > div.withScreencast:nth-child(1) > div > div.stApp.stAppEmbeddingId-s3wfzjqwcokm.streamlit-wide.st-emotion-cache-fg4pbf.erw9t6i1 > div.appview-container.st-emotion-cache-1wrcr25.ea3mdgi6:nth-child(2) > section.main.st-emotion-cache-uf99v8.ea3mdgi5:nth-child(2) > div.block-container.st-emotion-cache-z5fcl4.ea3mdgi4:nth-child(1) > div.st-emotion-cache-1wmy9hl.e1f1d6gn0 > div.st-emotion-cache-1y9ui5k.e1f1d6gn1 > div.st-emotion-cache-ocqkz7.e1f1d6gn4:nth-child(5) > div.st-emotion-cache-1b2d4l5.e1f1d6gn2:nth-child(3) > div.st-emotion-cache-1wmy9hl.e1f1d6gn0 > div.st-emotion-cache-1jiq91t.e1f1d6gn1 > div.element-container.st-emotion-cache-a8lcau.e1f1d6gn3 > div > div.st-emotion-cache-1xarl3l.e1i5pmia1:nth-child(2) > div.st-emotion-cache-1wivap2.e1i5pmia3 {
+                    color:#949494
+                }
+            </style>
+            <style>
+                body > div#root:nth-child(2) > div:nth-child(1) > div.withScreencast:nth-child(1) > div > div.stApp.stAppEmbeddingId-s3wfzjqwcokm.streamlit-wide.st-emotion-cache-fg4pbf.erw9t6i1 > div.appview-container.st-emotion-cache-1wrcr25.ea3mdgi6:nth-child(2) > section.main.st-emotion-cache-uf99v8.ea3mdgi5:nth-child(2) > div.block-container.st-emotion-cache-z5fcl4.ea3mdgi4:nth-child(1) > div.st-emotion-cache-1wmy9hl.e1f1d6gn0 > div.st-emotion-cache-1y9ui5k.e1f1d6gn1 > div.st-emotion-cache-ocqkz7.e1f1d6gn4:nth-child(5) > div.st-emotion-cache-1b2d4l5.e1f1d6gn2:nth-child(4) > div.st-emotion-cache-1wmy9hl.e1f1d6gn0 > div.st-emotion-cache-1jiq91t.e1f1d6gn1 > div.element-container.st-emotion-cache-a8lcau.e1f1d6gn3 > div > div.st-emotion-cache-1xarl3l.e1i5pmia1:nth-child(2) > div.st-emotion-cache-1wivap2.e1i5pmia3 {
+                    color:#F9B064
+                }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
 
         st.write(
             """
@@ -724,7 +730,26 @@ def labelling_component(authenticator):
 
                                     st.session_state["n_unlabeled_cardcodes"] -= 1
                                     st.session_state["n_labeled_cardcodes"] += 1
-                    st.rerun()
+
+                        # st.rerun()
+                        # col_status_unlabeled.empty()
+                        # col_status_pending.empty()
+                        # col_status_labeled.empty()
+                        # col_status_unlabeled.metric(
+                        #     label="Chưa hoàn tất",
+                        #     value=f'{st.session_state["n_unlabeled_cardcodes"]:,}',
+                        # )
+                        # col_status_labeled.metric(
+                        #     label="Hoàn tất", value=f'{st.session_state["n_labeled_cardcodes"]:,}'
+                        # )
+                        # col_status_pending.metric(
+                        #     label="Suy nghĩ lại", value=f'{st.session_state["n_pending_cardcodes"]:,}'
+                        # )
+                        # style_metric_cards(border_radius_px=10)
+                        # change_metric_color(f'{st.session_state["n_labeled_cardcodes"]:,}', "#92C580")
+                        # change_metric_color(f'{st.session_state["n_pending_cardcodes"]:,}', "#949494")
+                        # change_metric_color(f'{st.session_state["n_unlabeled_cardcodes"]:,}', "#F9B064")
+
         # with col1:
         show_input_cols = ["date", "item_name", "ingredients", "unitname"]
         trans_df: pd.DataFrame = trans_df[trans_df["customer_id"] == cardcode]
@@ -748,6 +773,17 @@ def labelling_component(authenticator):
         )
 
         authenticator.logout("Logout", "sidebar", key="logout_btn")
+
+
+        st.write(
+            """<style>
+            div#gridToolBar {
+                display: none;
+            },
+            </style>
+            """,
+            unsafe_allow_html=True,
+        )
 
         # st.subheader("Danh sách KH đã dán nhãn")
         # try:
