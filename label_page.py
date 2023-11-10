@@ -216,41 +216,16 @@ def labelling_component(authenticator):
         st.session_state["n_labeled_cardcodes"] = len(total_cardcodes) - len(cardcodes)
         st.session_state["n_pending_cardcodes"] = len(pending_cardcodes)
         col_status_unlabeled.metric(
-            label="Chưa hoàn tất",
+            label=":orange[Chưa hoàn tất]",
             value=f'{st.session_state["n_unlabeled_cardcodes"]:,}',
         )
         col_status_labeled.metric(
-            label="Hoàn tất", value=f'{st.session_state["n_labeled_cardcodes"]:,}'
+            label=":green[Hoàn tất]", value=f'{st.session_state["n_labeled_cardcodes"]:,}'
         )
         col_status_pending.metric(
-            label="Suy nghĩ lại", value=f'{st.session_state["n_pending_cardcodes"]:,}'
+            label=":grey[Suy nghĩ lại]", value=f'{st.session_state["n_pending_cardcodes"]:,}'
         )
         style_metric_cards(border_radius_px=10)
-        st.write(
-            """
-            <style>
-                body > div#root:nth-child(2) > div:nth-child(1) > div.withScreencast:nth-child(1) > div > div.stApp.stAppEmbeddingId-s3wfzjqwcokm.streamlit-wide.st-emotion-cache-fg4pbf.erw9t6i1 > div.appview-container.st-emotion-cache-1wrcr25.ea3mdgi6:nth-child(2) > section.main.st-emotion-cache-uf99v8.ea3mdgi5:nth-child(2) > div.block-container.st-emotion-cache-z5fcl4.ea3mdgi4:nth-child(1) > div.st-emotion-cache-1wmy9hl.e1f1d6gn0 > div.st-emotion-cache-1y9ui5k.e1f1d6gn1 > div.st-emotion-cache-ocqkz7.e1f1d6gn4:nth-child(13) > div.st-emotion-cache-1b2d4l5.e1f1d6gn2:nth-child(2) > div.st-emotion-cache-1wmy9hl.e1f1d6gn0 > div.st-emotion-cache-1jiq91t.e1f1d6gn1 > div.element-container.st-emotion-cache-a8lcau.e1f1d6gn3 > div > div.st-emotion-cache-1xarl3l.e1i5pmia1:nth-child(2) > div.st-emotion-cache-1wivap2.e1i5pmia3 {
-                    color:#92C580
-                }
-                body > div#root:nth-child(2) > div:nth-child(1) > div.withScreencast:nth-child(1) > div > div.stApp.stAppEmbeddingId-s3wfzjqwcokm.streamlit-wide.st-emotion-cache-fg4pbf.erw9t6i1 > div.appview-container.st-emotion-cache-1wrcr25.ea3mdgi6:nth-child(2) > section.main.st-emotion-cache-uf99v8.ea3mdgi5:nth-child(2) > div.block-container.st-emotion-cache-z5fcl4.ea3mdgi4:nth-child(1) > div.st-emotion-cache-1wmy9hl.e1f1d6gn0 > div.st-emotion-cache-1y9ui5k.e1f1d6gn1 > div.st-emotion-cache-ocqkz7.e1f1d6gn4:nth-child(11) > div.st-emotion-cache-1b2d4l5.e1f1d6gn2:nth-child(2) > div.st-emotion-cache-1wmy9hl.e1f1d6gn0 > div.st-emotion-cache-1jiq91t.e1f1d6gn1 > div.element-container.st-emotion-cache-a8lcau.e1f1d6gn3 > div > div.st-emotion-cache-1xarl3l.e1i5pmia1:nth-child(2) > div.st-emotion-cache-1wivap2.e1i5pmia3 {
-                    color:#92C580
-                }
-                body > div#root:nth-child(2) > div:nth-child(1) > div.withScreencast:nth-child(1) > div > div.stApp.stAppEmbeddingId-s3wfzjqwcokm.streamlit-wide.st-emotion-cache-fg4pbf.erw9t6i1 > div.appview-container.st-emotion-cache-1wrcr25.ea3mdgi6:nth-child(2) > section.main.st-emotion-cache-uf99v8.ea3mdgi5:nth-child(2) > div.block-container.st-emotion-cache-z5fcl4.ea3mdgi4:nth-child(1) > div.st-emotion-cache-1wmy9hl.e1f1d6gn0 > div.st-emotion-cache-1y9ui5k.e1f1d6gn1 > div.st-emotion-cache-ocqkz7.e1f1d6gn4:nth-child(13) > div.st-emotion-cache-1b2d4l5.e1f1d6gn2:nth-child(3) > div.st-emotion-cache-1wmy9hl.e1f1d6gn0 > div.st-emotion-cache-1jiq91t.e1f1d6gn1 > div.element-container.st-emotion-cache-a8lcau.e1f1d6gn3 > div > div.st-emotion-cache-1xarl3l.e1i5pmia1:nth-child(2) > div.st-emotion-cache-1wivap2.e1i5pmia3 {
-                    color:#949494
-                }
-                body > div#root:nth-child(2) > div:nth-child(1) > div.withScreencast:nth-child(1) > div > div.stApp.stAppEmbeddingId-s3wfzjqwcokm.streamlit-wide.st-emotion-cache-fg4pbf.erw9t6i1 > div.appview-container.st-emotion-cache-1wrcr25.ea3mdgi6:nth-child(2) > section.main.st-emotion-cache-uf99v8.ea3mdgi5:nth-child(2) > div.block-container.st-emotion-cache-z5fcl4.ea3mdgi4:nth-child(1) > div.st-emotion-cache-1wmy9hl.e1f1d6gn0 > div.st-emotion-cache-1y9ui5k.e1f1d6gn1 > div.st-emotion-cache-ocqkz7.e1f1d6gn4:nth-child(11) > div.st-emotion-cache-1b2d4l5.e1f1d6gn2:nth-child(3) > div.st-emotion-cache-1wmy9hl.e1f1d6gn0 > div.st-emotion-cache-1jiq91t.e1f1d6gn1 > div.element-container.st-emotion-cache-a8lcau.e1f1d6gn3 > div > div.st-emotion-cache-1xarl3l.e1i5pmia1:nth-child(2) > div.st-emotion-cache-1wivap2.e1i5pmia3 {
-                    color:#949494
-                }
-                body > div#root:nth-child(2) > div:nth-child(1) > div.withScreencast:nth-child(1) > div > div.stApp.stAppEmbeddingId-s3wfzjqwcokm.streamlit-wide.st-emotion-cache-fg4pbf.erw9t6i1 > div.appview-container.st-emotion-cache-1wrcr25.ea3mdgi6:nth-child(2) > section.main.st-emotion-cache-uf99v8.ea3mdgi5:nth-child(2) > div.block-container.st-emotion-cache-z5fcl4.ea3mdgi4:nth-child(1) > div.st-emotion-cache-1wmy9hl.e1f1d6gn0 > div.st-emotion-cache-1y9ui5k.e1f1d6gn1 > div.st-emotion-cache-ocqkz7.e1f1d6gn4:nth-child(13) > div.st-emotion-cache-1b2d4l5.e1f1d6gn2:nth-child(4) > div.st-emotion-cache-1wmy9hl.e1f1d6gn0 > div.st-emotion-cache-1jiq91t.e1f1d6gn1 > div.element-container.st-emotion-cache-a8lcau.e1f1d6gn3 > div > div.st-emotion-cache-1xarl3l.e1i5pmia1:nth-child(2) > div.st-emotion-cache-1wivap2.e1i5pmia3 {
-                    color:#F9B064
-                }
-                body > div#root:nth-child(2) > div:nth-child(1) > div.withScreencast:nth-child(1) > div > div.stApp.stAppEmbeddingId-s3wfzjqwcokm.streamlit-wide.st-emotion-cache-fg4pbf.erw9t6i1 > div.appview-container.st-emotion-cache-1wrcr25.ea3mdgi6:nth-child(2) > section.main.st-emotion-cache-uf99v8.ea3mdgi5:nth-child(2) > div.block-container.st-emotion-cache-z5fcl4.ea3mdgi4:nth-child(1) > div.st-emotion-cache-1wmy9hl.e1f1d6gn0 > div.st-emotion-cache-1y9ui5k.e1f1d6gn1 > div.st-emotion-cache-ocqkz7.e1f1d6gn4:nth-child(11) > div.st-emotion-cache-1b2d4l5.e1f1d6gn2:nth-child(4) > div.st-emotion-cache-1wmy9hl.e1f1d6gn0 > div.st-emotion-cache-1jiq91t.e1f1d6gn1 > div.element-container.st-emotion-cache-a8lcau.e1f1d6gn3 > div > div.st-emotion-cache-1xarl3l.e1i5pmia1:nth-child(2) > div.st-emotion-cache-1wivap2.e1i5pmia3 {
-                    color:#F9B064
-                }
-            </style>
-            """,
-            unsafe_allow_html=True,
-        )
 
         st.write(
             """
