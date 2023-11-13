@@ -8,15 +8,19 @@ from st_aggrid.grid_options_builder import GridOptionsBuilder
 from streamlit_extras.metric_cards import style_metric_cards
 
 from utils import save_data_gcs, load_data_gcs, get_data_gcs
+from datetime import datetime
 
 from components.status_filter import status_filter
 
 TRANSACTION_PATH = "lc_labelling_bucket/cdp/cdp_transaction_sample.csv"
 OUTPUT_PATH = "lc_labelling_bucket/cdp/cdp_tagging_sample.csv"
+LABELLING_PERMISSION = "lc_labelling_bucket/cdp/permission.csv"
 LABEL_PATH = "lc_labelling_bucket/cdp/labels/total_labels_{}_alpha.csv"
 LOCAL_LABEL_PATH = "./data/total_labels_{}_alpha.csv"
 PENDING_CUSTOMER_PATH = "lc_labelling_bucket/cdp/labels/pending_{}.csv"
 LOCAL_PENDING_CUSTOMER_PATH = "./data/pending_{}.csv"
+LABEL_STATUS_PATH = "lc_labelling_bucket/cdp/status/label_status_{}.csv"
+LOCAL_LABEL_STATUS_PATH = "./data/label_status_{}.csv"
 COLOR_CODES = ["#c5dceb", "#d9d3e8", "#b0ddf1", "#d3ebf5", "#cfe6db", "#fdf2e6"]
 IMPORTANCE_COLOR_CODES = {"Cao": "#0285B7", "Trung Bình": "#91C3D4", "Thấp": "#CFDFE6"}
 DUOC_SI_COLS = ["duocsi_1", "duocsi_2"]
@@ -65,16 +69,25 @@ def load_unlabeled_cardcodes(labeller_name: str, cardcode_total):
     return cardcode_total - labelled_cardcodes
 
 
+def save_data_local_cloud(
+    df: pd.DataFrame, local_path: str, cloud_path: str, conn: FilesConnection
+):
+    df.to_csv(
+        local_path,
+        index=False,
+    )
+    save_data_gcs(
+        local_path,
+        cloud_path,
+        conn=conn,
+    )
+
+
 @st.cache_data
 def load_all_data(_conn: FilesConnection):
     with st.spinner("Loading..."):
         trans_df = load_data_gcs(TRANSACTION_PATH, _conn)
         outputs_df = load_data_gcs(OUTPUT_PATH, _conn)
-
-        # Filter by duoc si
-        current_labeller = st.session_state["username"]
-        mask_labeller = (trans_df[DUOC_SI_COLS] == current_labeller).any(axis="columns")
-        trans_df = trans_df[mask_labeller]
 
     return trans_df, outputs_df
 
@@ -137,6 +150,7 @@ def labelling_component(authenticator):
     else:
         labeller_username = st.session_state["username"]
         conn = st.connection("gcs", type=FilesConnection)
+        today_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         st.write(
             """
@@ -146,11 +160,24 @@ def labelling_component(authenticator):
             }
             </style>
             """,
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
 
         # ? Static data
+        permission_df = load_data_gcs(LABELLING_PERMISSION, conn)
+
         trans_df, outputs_df = load_all_data(conn)
+
+        # Filter by duoc si
+        current_labeller = st.session_state["username"]
+        start_idx, end_idx = (
+            permission_df[permission_df["user_name"] == current_labeller][
+                ["start_idx", "end_idx"]
+            ]
+            .values[0]
+            .tolist()
+        )
+        trans_df = trans_df[trans_df["customer_id"].between(start_idx, end_idx)]
         # ? Label data
         try:
             with st.spinner("Loading label data..."):
@@ -197,6 +224,23 @@ def labelling_component(authenticator):
                 ]
             )
 
+        # ? Status data
+        try:
+            with st.spinner("Loading status data..."):
+                get_data_gcs(
+                    LABEL_STATUS_PATH.format(labeller_username),
+                    LOCAL_LABEL_STATUS_PATH.format(labeller_username),
+                    conn,
+                )
+                status_df = pd.read_csv(
+                    LOCAL_LABEL_STATUS_PATH.format(labeller_username)
+                )
+        except:
+            status_df = pd.DataFrame(columns=["customer_id", "status", "last_update"])
+            status_df["customer_id"] = trans_df["customer_id"].unique()
+            status_df["status"] = "Chưa hoàn tất"
+            status_df["last_update"] = today_str
+
         total_cardcodes = set(trans_df["customer_id"].unique())
         cardcodes = load_unlabeled_cardcodes(labeller_username, total_cardcodes)
         labelled_cardcodes = load_cardcode_label(labeller_username)
@@ -206,10 +250,11 @@ def labelling_component(authenticator):
         # ? Status cards
         (
             col_status,
+            col_warning,
             col_status_labeled,
             col_status_pending,
             col_status_unlabeled,
-        ) = st.columns([4, 1, 1, 1])
+        ) = st.columns([2, 2, 1, 1, 1])
         st.session_state["n_unlabeled_cardcodes"] = len(cardcodes) - len(
             pending_cardcodes
         )
@@ -220,10 +265,12 @@ def labelling_component(authenticator):
             value=f'{st.session_state["n_unlabeled_cardcodes"]:,}',
         )
         col_status_labeled.metric(
-            label=":green[Hoàn tất]", value=f'{st.session_state["n_labeled_cardcodes"]:,}'
+            label=":green[Hoàn tất]",
+            value=f'{st.session_state["n_labeled_cardcodes"]:,}',
         )
         col_status_pending.metric(
-            label=":grey[Suy nghĩ lại]", value=f'{st.session_state["n_pending_cardcodes"]:,}'
+            label=":grey[Suy nghĩ lại]",
+            value=f'{st.session_state["n_pending_cardcodes"]:,}',
         )
         style_metric_cards(border_radius_px=10)
 
@@ -527,9 +574,8 @@ def labelling_component(authenticator):
                     }
                 </style>
                 """,
-                unsafe_allow_html=True
+                unsafe_allow_html=True,
             )
-
 
             if submitted:
                 if cardcode is None:
@@ -576,9 +622,7 @@ def labelling_component(authenticator):
                             trash_dict, inplace=True
                         )
 
-                        df_pending.loc[
-                            lv1_disagree_index, "specialty_labels"
-                        ] = True
+                        df_pending.loc[lv1_disagree_index, "specialty_labels"] = True
                         df_pending.loc[
                             lv2_disagree_index, "disease_group_labels"
                         ] = True
@@ -596,32 +640,53 @@ def labelling_component(authenticator):
                             ).drop_duplicates(ignore_index=True)
 
                         with st.spinner("Saving postponed data...", cache=True):
-                            postponed_df.to_csv(
-                                LOCAL_PENDING_CUSTOMER_PATH.format(
+                            save_data_local_cloud(
+                                postponed_df,
+                                local_path=LOCAL_PENDING_CUSTOMER_PATH.format(
                                     labeller_username
                                 ),
-                                index=False,
+                                cloud_path=PENDING_CUSTOMER_PATH.format(
+                                    labeller_username
+                                ),
+                                conn=conn,
                             )
-                            save_data_gcs(
-                                LOCAL_PENDING_CUSTOMER_PATH.format(
+                            status_df = pd.concat(
+                                [
+                                    pd.DataFrame(
+                                        {
+                                            "customer_id": [cardcode],
+                                            "status": ["Suy nghĩ lại"],
+                                            "last_update": [
+                                                datetime.now().strftime(
+                                                    "%Y-%m-%d %H:%M:%S"
+                                                )
+                                            ],
+                                        }
+                                    ),
+                                    status_df,
+                                ],
+                                ignore_index=True,
+                            ).sort_values(
+                                by="customer_id", ignore_index=True, ascending=True
+                            )
+                            save_data_local_cloud(
+                                status_df,
+                                local_path=LOCAL_LABEL_STATUS_PATH.format(
                                     labeller_username
                                 ),
-                                PENDING_CUSTOMER_PATH.format(labeller_username),
+                                cloud_path=LABEL_STATUS_PATH.format(labeller_username),
                                 conn=conn,
                             )
                             if cardcode in labelled_cardcodes:
                                 # Remove from pending list
-                                label_df = label_df[
-                                    label_df["CardCode"] != cardcode
-                                ]
+                                label_df = label_df[label_df["CardCode"] != cardcode]
                                 with st.spinner("Saving postponed data..."):
-                                    label_df.to_csv(
-                                        LOCAL_LABEL_PATH.format(labeller_username),
-                                        index=False,
-                                    )
-                                    save_data_gcs(
-                                        LOCAL_LABEL_PATH.format(labeller_username),
-                                        LABEL_PATH.format(labeller_username),
+                                    save_data_local_cloud(
+                                        label_df,
+                                        local_path=LOCAL_LABEL_PATH.format(
+                                            labeller_username
+                                        ),
+                                        cloud_path=LABEL_PATH.format(labeller_username),
                                         conn=conn,
                                     )
                                     st.session_state["n_labeled_cardcodes"] -= 1
@@ -671,9 +736,7 @@ def labelling_component(authenticator):
                         )
 
                         df_submit.loc[lv1_disagree_index, "specialty_labels"] = True
-                        df_submit.loc[
-                            lv2_disagree_index, "disease_group_labels"
-                        ] = True
+                        df_submit.loc[lv2_disagree_index, "disease_group_labels"] = True
 
                         if (
                             df_submit.loc[lv1_disagree_index, "specialty_responses"]
@@ -681,14 +744,12 @@ def labelling_component(authenticator):
                             .sum()
                             != 0
                         ) or (
-                            df_submit.loc[
-                                lv2_disagree_index, "disease_group_labels"
-                            ]
+                            df_submit.loc[lv2_disagree_index, "disease_group_labels"]
                             .isna()
                             .sum()
                             != 0
                         ):
-                            st.warning(
+                            col_warning.warning(
                                 "Mỗi ô không đồng ý phải có bình luận tương ứng"
                             )
                         else:
@@ -697,40 +758,62 @@ def labelling_component(authenticator):
                                     [df_submit, label_df], ignore_index=True
                                 ).drop_duplicates(ignore_index=True)
                             else:
-                                label_df = label_df[
-                                    label_df["CardCode"] != cardcode
-                                ]
+                                label_df = label_df[label_df["CardCode"] != cardcode]
                                 label_df = pd.concat(
                                     [df_submit, label_df], ignore_index=True
                                 ).drop_duplicates(ignore_index=True)
 
                             with st.spinner("Saving data..."):
-                                label_df.to_csv(
-                                    LOCAL_LABEL_PATH.format(labeller_username),
-                                    index=False,
-                                )
-                                save_data_gcs(
-                                    LOCAL_LABEL_PATH.format(labeller_username),
-                                    LABEL_PATH.format(labeller_username),
+                                save_data_local_cloud(
+                                    label_df,
+                                    local_path=LOCAL_LABEL_PATH.format(
+                                        labeller_username
+                                    ),
+                                    cloud_path=LABEL_PATH.format(labeller_username),
                                     conn=conn,
                                 )
+                                status_df = pd.concat(
+                                    [
+                                        pd.DataFrame(
+                                            {
+                                                "customer_id": [cardcode],
+                                                "status": ["Hoàn tất"],
+                                                "last_update": [
+                                                    datetime.now().strftime(
+                                                        "%Y-%m-%d %H:%M:%S"
+                                                    )
+                                                ],
+                                            }
+                                        ),
+                                        status_df,
+                                    ],
+                                    ignore_index=True,
+                                ).sort_values(
+                                    by="customer_id", ignore_index=True, ascending=True
+                                )
+                                save_data_local_cloud(
+                                    status_df,
+                                    local_path=LOCAL_LABEL_STATUS_PATH.format(
+                                        labeller_username
+                                    ),
+                                    cloud_path=LABEL_STATUS_PATH.format(
+                                        labeller_username
+                                    ),
+                                    conn=conn,
+                                )
+
                                 if cardcode in pending_cardcodes:
                                     # Remove from pending list
                                     postponed_df = postponed_df[
                                         postponed_df["CardCode"] != cardcode
                                     ]
                                     with st.spinner("Saving postponed data..."):
-                                        postponed_df.to_csv(
-                                            LOCAL_PENDING_CUSTOMER_PATH.format(
+                                        save_data_local_cloud(
+                                            postponed_df,
+                                            local_path=LOCAL_PENDING_CUSTOMER_PATH.format(
                                                 labeller_username
                                             ),
-                                            index=False,
-                                        )
-                                        save_data_gcs(
-                                            LOCAL_PENDING_CUSTOMER_PATH.format(
-                                                labeller_username
-                                            ),
-                                            PENDING_CUSTOMER_PATH.format(
+                                            cloud_path=PENDING_CUSTOMER_PATH.format(
                                                 labeller_username
                                             ),
                                             conn=conn,
@@ -740,7 +823,7 @@ def labelling_component(authenticator):
                                 st.session_state["n_unlabeled_cardcodes"] -= 1
                                 st.session_state["n_labeled_cardcodes"] += 1
 
-                        st.rerun()
+                    st.rerun()
 
         # with col1:
         show_input_cols = ["date", "item_name", "ingredients", "unitname"]
