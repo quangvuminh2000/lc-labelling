@@ -11,8 +11,8 @@ from utils import save_data_gcs, load_data_gcs, get_data_gcs
 
 from components.status_filter import status_filter
 
-TRANSACTION_PATH = "lc_labelling_bucket/cdp/transaction_sample.csv"
-OUTPUT_PATH = "lc_labelling_bucket/cdp/tagging_sample.csv"
+TRANSACTION_PATH = "lc_labelling_bucket/cdp/cdp_transaction_sample.csv"
+OUTPUT_PATH = "lc_labelling_bucket/cdp/cdp_tagging_sample.csv"
 LABEL_PATH = "lc_labelling_bucket/cdp/labels/total_labels_{}_alpha.csv"
 LOCAL_LABEL_PATH = "./data/total_labels_{}_alpha.csv"
 PENDING_CUSTOMER_PATH = "lc_labelling_bucket/cdp/labels/pending_{}.csv"
