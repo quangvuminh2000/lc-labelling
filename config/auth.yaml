@@ -32,6 +32,30 @@ credentials:
       email: user2@gmail.com
       name: User 2
       password: $2b$12$8.yOMdm.sWWVUQzZkf.52O0BJGGExvR9w5R1.8sTTCqde5OSgWC2q
+    user3:
+      email: user3@gmail.com
+      name: User 3
+      password: $2b$12$GLWgOcotOtkh72dy12plI.IaLsd3XTqsmj08SqbDeVI13MjqeTOue
+    user4:
+      email: user4@gmail.com
+      name: User 4
+      password: $2b$12$xtMf6sRhGjw5QexJg4WwXutdGeJopVGGKPs87stHeqJicqmq7tj/.
+    user5:
+      email: user5@gmail.com
+      name: User 5
+      password: $2b$12$z.7jlxCCFFvqiIg8BvV3B./5XG8jON0v6IxlWxCSqwnIc2lHlWpfW
+    user6:
+      email: user6@gmail.com
+      name: User 6
+      password: $2b$12$vB/tIWjNXy8VYFR1miW0J.HugOilbHTOy3XN13Q4yehNsxS3.xVG2
+    user_test1:
+      email: user_test1@gmail.com
+      name: User Test 1
+      password: $2b$12$WkjWi9ICYsUZMx8dCxIlF.bx0Ko38YyjYcpnIJ3zyMLbuqM4bL4lq
+    user_test2:
+      email: user_test2@gmail.com
+      name: User Test 2
+      password: $2b$12$mpNyPO/mAzWc6v9YGw95bOyZfRD/FQnhv0S2N41HVL5.xghvS19E2
 preauthorized:
   emails:
   - quangvm9@fpt.com.vn

@@ -263,6 +263,7 @@ def authentication_component():
                 unsafe_allow_html=True,
             )
             login_form(authenticator)
+            # register_user_form(authenticator)
 
     # * LOGIN SUCCESSFULLY
     if st.session_state["authentication_status"]:
