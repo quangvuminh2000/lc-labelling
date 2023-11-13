@@ -24,6 +24,14 @@ credentials:
       email: quangvm9@fpt.com
       name: Quang Vu Minh
       password: $2b$12$EELDil4tO69GMOkBD4P0MesYyicJbEeqNFJeAn00F9L3CKRKooQuC
+    user1:
+      email: user1@gmail.com
+      name: User 1
+      password: $2b$12$C1X9PjI/k1fGxHa48z/2i.FKEUMpSl/JW6s06CeAyBrKrQeNmhEQy
+    user2:
+      email: user2@gmail.com
+      name: User 2
+      password: $2b$12$8.yOMdm.sWWVUQzZkf.52O0BJGGExvR9w5R1.8sTTCqde5OSgWC2q
 preauthorized:
   emails:
   - quangvm9@fpt.com.vn
